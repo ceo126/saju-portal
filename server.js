@@ -6,6 +6,12 @@ const SajuInterpreter = require('./lib/saju-interpreter');
 
 const app = express();
 const PORT = process.env.PORT || 8210;
+
+if (!process.env.GEMINI_API_KEY) {
+  console.error('⚠️  GEMINI_API_KEY가 .env 파일에 설정되지 않았습니다.');
+  console.error('   .env 파일에 GEMINI_API_KEY=your_key 를 추가해주세요.');
+  process.exit(1);
+}
 const interpreter = new SajuInterpreter(process.env.GEMINI_API_KEY);
 
 app.use(express.json());

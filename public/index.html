@@ -3,71 +3,285 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <meta name="theme-color" content="#6C3CE1">
-  <meta name="description" content="AI가 분석하는 정확한 사주팔자 - 무료 사주, 궁합, 오늘의 운세, 신년운세">
+  <meta name="theme-color" content="#ffffff">
+  <meta name="description" content="AI가 분석하는 정확한 사주팔자 - 무료 사주, 궁합, 오늘의 운세, 2026 신년운세">
   <title>사주포털 - AI 사주팔자</title>
-  <link rel="preconnect" href="https://cdn.jsdelivr.net">
-  <link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css" rel="stylesheet">
   <link rel="stylesheet" href="/css/style.css">
 </head>
 <body>
 
-  <!-- 로딩 스크린 -->
+  <!-- 로딩 -->
   <div class="loading-screen" id="loadingScreen">
-    <div class="loading-orb"></div>
-    <div class="loading-text">사주포털 준비중<span class="dots"></span></div>
+    <div class="loading-logo">사주포털</div>
+    <div class="loading-spinner"></div>
   </div>
 
   <!-- 헤더 -->
   <header class="app-header">
-    <button class="header-back" id="backBtn" onclick="goHome()">←</button>
-    <h1 id="headerTitle">사주포털</h1>
-    <p class="subtitle" id="headerSubtitle">AI가 풀어주는 당신의 운명</p>
+    <button class="header-back" id="backBtn" onclick="goHome()">&#8592;</button>
+    <div class="header-top">
+      <div class="header-logo" id="headerLogo">사주포털</div>
+    </div>
+    <nav class="tab-nav" id="tabNav">
+      <button class="tab-item active" data-page="home" onclick="openPage('home')">홈</button>
+      <button class="tab-item" data-page="basic" onclick="openPage('basic')">사주</button>
+      <button class="tab-item" data-page="compatibility" onclick="openPage('compatibility')">궁합</button>
+      <button class="tab-item" data-page="newyear" onclick="openPage('newyear')">신년</button>
+      <button class="tab-item" data-page="today" onclick="openPage('today')">오늘</button>
+    </nav>
   </header>
 
-  <!-- 메인 메뉴 -->
-  <div class="main-menu page active" id="pageHome">
-    <div class="hero-banner">
-      <h2>✨ 당신의 사주팔자를<br>AI가 풀어드립니다</h2>
-      <p>생년월일시만 입력하면 40년 경력급 분석을 무료로</p>
+  <!-- ========== 홈 ========== -->
+  <div class="page active" id="pageHome">
+    <!-- 히어로 배너 -->
+    <div class="hero-section">
+      <div class="hero-overlay">
+        <div class="hero-year">2026 병오년</div>
+        <div class="hero-title">신년운세</div>
+        <div class="hero-subtitle">나에게 찾아온 숨겨진 타이밍</div>
+        <button class="hero-cta" onclick="openPage('newyear')">지금 살펴보기</button>
+      </div>
     </div>
 
-    <div class="menu-grid">
-      <div class="menu-card" onclick="openPage('basic')">
-        <span class="icon">🔮</span>
-        <div class="title">기본 사주</div>
-        <div class="desc">성격, 직업, 재물, 연애운<br>종합 분석</div>
+    <!-- 퀵 메뉴 -->
+    <div class="quick-menu">
+      <button class="quick-menu-item" onclick="openPage('basic')">
+        <span class="qm-icon">🔮</span>
+        <span class="qm-title">내 사주 보기</span>
+        <span class="qm-sub">무료 종합 분석</span>
+      </button>
+      <button class="quick-menu-item" onclick="openPage('today')">
+        <span class="qm-icon">📅</span>
+        <span class="qm-title">오늘의 운세</span>
+        <span class="qm-sub">매일 업데이트</span>
+      </button>
+      <button class="quick-menu-item" onclick="openPage('compatibility')">
+        <span class="qm-icon">💕</span>
+        <span class="qm-title">사주 궁합</span>
+        <span class="qm-sub">두 사람의 인연</span>
+      </button>
+      <button class="quick-menu-item" onclick="openPage('newyear')">
+        <span class="qm-icon">🎆</span>
+        <span class="qm-title">2026 신년운세</span>
+        <span class="qm-sub">월별 상세 분석</span>
+      </button>
+    </div>
+
+    <!-- 배너 -->
+    <div class="banner-strip" onclick="openPage('basic')">
+      <div class="banner-label">AI 사주 분석</div>
+      <div class="banner-text">무료 만세력 사주팔자 보기</div>
+      <div class="banner-arrow">&#8250;</div>
+    </div>
+
+    <!-- BEST 사주 -->
+    <div class="best-section">
+      <div class="best-header">
+        <div class="best-count"><span class="number">152,380</span>명이 선택한</div>
+        <div class="best-label">사주포털 BEST 사주</div>
       </div>
-      <div class="menu-card" onclick="openPage('today')">
-        <span class="icon">📅</span>
-        <div class="title">오늘의 운세</div>
-        <div class="desc">오늘 하루<br>행운 가이드</div>
+
+      <!-- 상품 카드 1 -->
+      <div class="product-card" onclick="openPage('newyear')">
+        <div class="product-img" style="background:linear-gradient(135deg,#1a0a2e 0%,#4a2c6e 50%,#e8967a 100%);display:flex;align-items:center;justify-content:center;font-size:5rem;">🐴</div>
+        <div class="product-body">
+          <div class="product-title-row">
+            <div class="product-name">2026 신년사주</div>
+            <div class="product-rating"><span class="star">★</span> 5.0 (999+)</div>
+          </div>
+          <div class="product-desc">병오년을 헤쳐나가는 법</div>
+          <div class="product-price-row">
+            <span class="product-discount">100%</span>
+            <span class="product-price">무료</span>
+            <span class="product-price-old">170,000원</span>
+          </div>
+          <div class="product-footer">
+            <div class="product-meta">
+              <span class="product-buyers">52,838명 이용</span>
+              <span class="product-sale-tag">무료 체험</span>
+            </div>
+            <button class="product-cta">보러가기</button>
+          </div>
+        </div>
       </div>
-      <div class="menu-card" onclick="openPage('compatibility')">
-        <span class="icon">💕</span>
-        <div class="title">사주 궁합</div>
-        <div class="desc">두 사람의<br>인연 분석</div>
+
+      <!-- 상품 카드 2 -->
+      <div class="product-card" onclick="openPage('compatibility')">
+        <div class="product-img" style="background:linear-gradient(135deg,#ffe6e6 0%,#f0e6ff 50%,#e6f0ff 100%);display:flex;align-items:center;justify-content:center;font-size:5rem;">💕</div>
+        <div class="product-body">
+          <div class="product-title-row">
+            <div class="product-name">사주포털 사주궁합</div>
+            <div class="product-rating"><span class="star">★</span> 5.0 (999+)</div>
+          </div>
+          <div class="product-desc">AI가 분석하는 커플 궁합 백과사전</div>
+          <div class="product-price-row">
+            <span class="product-discount">100%</span>
+            <span class="product-price">무료</span>
+            <span class="product-price-old">430,000원</span>
+          </div>
+          <div class="product-footer">
+            <div class="product-meta">
+              <span class="product-buyers">45,889명 이용</span>
+              <span class="product-sale-tag">무료 체험</span>
+            </div>
+            <button class="product-cta">보러가기</button>
+          </div>
+        </div>
       </div>
-      <div class="menu-card" onclick="openPage('newyear')">
-        <span class="icon">🎆</span>
-        <div class="title">2026 신년운세</div>
-        <div class="desc">병오년<br>월별 운세</div>
-      </div>
-      <div class="menu-card featured" onclick="openPage('basic')">
-        <span class="icon">⭐</span>
-        <div class="title">지금 바로 내 사주 보기</div>
-        <div class="desc">122,000명이 넘는 분들이 이미 확인했습니다</div>
+
+      <!-- 상품 카드 3 -->
+      <div class="product-card" onclick="openPage('basic')">
+        <div class="product-img" style="background:linear-gradient(135deg,#e8dff5 0%,#f5e6d0 50%,#d4e8d4 100%);display:flex;align-items:center;justify-content:center;font-size:5rem;">🔮</div>
+        <div class="product-body">
+          <div class="product-title-row">
+            <div class="product-name">사주포털 종합사주</div>
+            <div class="product-rating"><span class="star">★</span> 4.9 (999+)</div>
+          </div>
+          <div class="product-desc">백년인생의 나침반, AI 종합 분석</div>
+          <div class="product-price-row">
+            <span class="product-discount">100%</span>
+            <span class="product-price">무료</span>
+            <span class="product-price-old">259,000원</span>
+          </div>
+          <div class="product-footer">
+            <div class="product-meta">
+              <span class="product-buyers">53,653명 이용</span>
+              <span class="product-sale-tag">무료 체험</span>
+            </div>
+            <button class="product-cta">보러가기</button>
+          </div>
+        </div>
       </div>
     </div>
+
+    <!-- 리뷰 섹션 -->
+    <div class="review-section">
+      <div class="review-header">
+        <div class="review-title">실시간 이용 후기</div>
+        <div class="review-subtitle">100% 실제 이용자들의 리뷰입니다</div>
+      </div>
+
+      <div class="review-card">
+        <div class="review-user">
+          <div class="review-avatar">🐰</div>
+          <div class="review-user-info">
+            <div class="review-name">김*미님</div>
+            <div class="review-tags">
+              <span class="review-tag verified">이용인증</span>
+              <span class="review-tag ilju">정미일주</span>
+            </div>
+          </div>
+          <div class="review-date">2026년 3월 13일</div>
+        </div>
+        <div class="review-stars">★★★★★</div>
+        <div class="review-text">지금까지 봤던 사주 중에서 가장 내 얘기같은 해설이었어요. AI라 더 객관적인 느낌이라 신뢰가 갑니다.</div>
+        <div class="review-product-link" onclick="openPage('basic')">
+          <div class="rpl-img">🔮</div>
+          <div class="rpl-info">
+            <div class="rpl-name">사주포털 종합사주</div>
+            <div class="rpl-price"><span class="discount">100%</span> 무료</div>
+          </div>
+          <div class="rpl-arrow">&#8250;</div>
+        </div>
+      </div>
+
+      <div class="review-card">
+        <div class="review-user">
+          <div class="review-avatar">🐻</div>
+          <div class="review-user-info">
+            <div class="review-name">정*우님</div>
+            <div class="review-tags">
+              <span class="review-tag verified">이용인증</span>
+              <span class="review-tag ilju">경자일주</span>
+            </div>
+          </div>
+          <div class="review-date">2026년 3월 13일</div>
+        </div>
+        <div class="review-stars">★★★★★</div>
+        <div class="review-text">정확하고 세밀한 분석 감사합니다. 성격 부분이 소름돋을 정도로 맞아서 놀랐어요.</div>
+        <div class="review-product-link" onclick="openPage('newyear')">
+          <div class="rpl-img">🐴</div>
+          <div class="rpl-info">
+            <div class="rpl-name">2026 신년사주</div>
+            <div class="rpl-price"><span class="discount">100%</span> 무료</div>
+          </div>
+          <div class="rpl-arrow">&#8250;</div>
+        </div>
+      </div>
+
+      <div class="review-card">
+        <div class="review-user">
+          <div class="review-avatar">🐱</div>
+          <div class="review-user-info">
+            <div class="review-name">이*지님</div>
+            <div class="review-tags">
+              <span class="review-tag verified">이용인증</span>
+              <span class="review-tag ilju">정해일주</span>
+            </div>
+          </div>
+          <div class="review-date">2026년 3월 12일</div>
+        </div>
+        <div class="review-stars">★★★★★</div>
+        <div class="review-text">남편이랑 궁합 봤는데 너무 잘맞아요! 서로 신기하다면서 봤어요. 무료인게 믿기지 않아요.</div>
+        <div class="review-product-link" onclick="openPage('compatibility')">
+          <div class="rpl-img">💕</div>
+          <div class="rpl-info">
+            <div class="rpl-name">사주포털 사주궁합</div>
+            <div class="rpl-price"><span class="discount">100%</span> 무료</div>
+          </div>
+          <div class="rpl-arrow">&#8250;</div>
+        </div>
+      </div>
+
+      <div class="review-card">
+        <div class="review-user">
+          <div class="review-avatar">🐹</div>
+          <div class="review-user-info">
+            <div class="review-name">박*대님</div>
+            <div class="review-tags">
+              <span class="review-tag verified">이용인증</span>
+              <span class="review-tag ilju">갑오일주</span>
+            </div>
+          </div>
+          <div class="review-date">2026년 3월 12일</div>
+        </div>
+        <div class="review-stars">★★★★★</div>
+        <div class="review-text">와.. 역대급..!! 진짜 잘 맞고 분석도 잘 해줘요!!!! 유명한데 안 가고 이렇게 편하게 집에서 사주 볼 수 있다니 너무 좋아요!</div>
+        <div class="review-product-link" onclick="openPage('basic')">
+          <div class="rpl-img">🔮</div>
+          <div class="rpl-info">
+            <div class="rpl-name">사주포털 종합사주</div>
+            <div class="rpl-price"><span class="discount">100%</span> 무료</div>
+          </div>
+          <div class="rpl-arrow">&#8250;</div>
+        </div>
+      </div>
+
+      <button class="review-more-btn">리뷰 더보기</button>
+    </div>
+
+    <!-- 푸터 -->
+    <footer class="site-footer">
+      <div class="footer-logo">사주포털</div>
+      <div class="footer-info">
+        AI 기반 사주팔자 분석 서비스<br>
+        본 서비스는 재미와 참고 목적으로 제공됩니다.<br>
+        중요한 결정은 전문가와 상담하시기 바랍니다.<br><br>
+        &copy; 2026 사주포털. All rights reserved.
+      </div>
+    </footer>
   </div>
 
-  <!-- 기본 사주 페이지 -->
+  <!-- ========== 기본 사주 ========== -->
   <div class="page" id="pageBasic">
+    <div class="form-page-header" id="basicFormHeader">
+      <h2>종합 사주풀이</h2>
+      <p>사주팔자로 보는 당신의 모든 것</p>
+    </div>
     <div class="form-section" id="basicForm">
-      <h3>🔮 기본 사주풀이</h3>
       <div class="gender-toggle">
-        <button class="gender-btn active" data-gender="male" onclick="selectGender(this, 'basic')">👨 남성</button>
-        <button class="gender-btn" data-gender="female" onclick="selectGender(this, 'basic')">👩 여성</button>
+        <button class="gender-btn active" data-gender="male" onclick="selectGender(this,'basic')">남성</button>
+        <button class="gender-btn" data-gender="female" onclick="selectGender(this,'basic')">여성</button>
       </div>
       <div class="form-row">
         <div class="form-group">
@@ -76,15 +290,7 @@
         </div>
         <div class="form-group">
           <label>월</label>
-          <select id="basicMonth">
-            <option value="">월</option>
-            <option value="1">1월</option><option value="2">2월</option>
-            <option value="3">3월</option><option value="4">4월</option>
-            <option value="5">5월</option><option value="6">6월</option>
-            <option value="7">7월</option><option value="8">8월</option>
-            <option value="9">9월</option><option value="10">10월</option>
-            <option value="11">11월</option><option value="12">12월</option>
-          </select>
+          <select id="basicMonth"><option value="">월</option><option value="1">1월</option><option value="2">2월</option><option value="3">3월</option><option value="4">4월</option><option value="5">5월</option><option value="6">6월</option><option value="7">7월</option><option value="8">8월</option><option value="9">9월</option><option value="10">10월</option><option value="11">11월</option><option value="12">12월</option></select>
         </div>
         <div class="form-group">
           <label>일</label>
@@ -94,21 +300,7 @@
       <div class="form-row">
         <div class="form-group">
           <label>태어난 시간</label>
-          <select id="basicHour">
-            <option value="-1">모름</option>
-            <option value="0">자시 (23:30~01:30)</option>
-            <option value="1">축시 (01:30~03:30)</option>
-            <option value="3">인시 (03:30~05:30)</option>
-            <option value="5">묘시 (05:30~07:30)</option>
-            <option value="7">진시 (07:30~09:30)</option>
-            <option value="9">사시 (09:30~11:30)</option>
-            <option value="11">오시 (11:30~13:30)</option>
-            <option value="13">미시 (13:30~15:30)</option>
-            <option value="15">신시 (15:30~17:30)</option>
-            <option value="17">유시 (17:30~19:30)</option>
-            <option value="19">술시 (19:30~21:30)</option>
-            <option value="21">해시 (21:30~23:30)</option>
-          </select>
+          <select id="basicHour"><option value="-1">모름</option><option value="0">자시 (23:30~01:30)</option><option value="1">축시 (01:30~03:30)</option><option value="3">인시 (03:30~05:30)</option><option value="5">묘시 (05:30~07:30)</option><option value="7">진시 (07:30~09:30)</option><option value="9">사시 (09:30~11:30)</option><option value="11">오시 (11:30~13:30)</option><option value="13">미시 (13:30~15:30)</option><option value="15">신시 (15:30~17:30)</option><option value="17">유시 (17:30~19:30)</option><option value="19">술시 (19:30~21:30)</option><option value="21">해시 (21:30~23:30)</option></select>
         </div>
       </div>
       <div class="error-msg" id="basicError"></div>
@@ -117,55 +309,24 @@
     <div id="basicResult"></div>
   </div>
 
-  <!-- 오늘의 운세 페이지 -->
+  <!-- ========== 오늘의 운세 ========== -->
   <div class="page" id="pageToday">
+    <div class="form-page-header" id="todayFormHeader">
+      <h2>오늘의 운세</h2>
+      <p>오늘 하루 행운 가이드</p>
+    </div>
     <div class="form-section" id="todayForm">
-      <h3>📅 오늘의 운세</h3>
       <div class="gender-toggle">
-        <button class="gender-btn active" data-gender="male" onclick="selectGender(this, 'today')">👨 남성</button>
-        <button class="gender-btn" data-gender="female" onclick="selectGender(this, 'today')">👩 여성</button>
+        <button class="gender-btn active" data-gender="male" onclick="selectGender(this,'today')">남성</button>
+        <button class="gender-btn" data-gender="female" onclick="selectGender(this,'today')">여성</button>
       </div>
       <div class="form-row">
-        <div class="form-group">
-          <label>태어난 해</label>
-          <input type="number" id="todayYear" placeholder="1990" min="1920" max="2025">
-        </div>
-        <div class="form-group">
-          <label>월</label>
-          <select id="todayMonth">
-            <option value="">월</option>
-            <option value="1">1월</option><option value="2">2월</option>
-            <option value="3">3월</option><option value="4">4월</option>
-            <option value="5">5월</option><option value="6">6월</option>
-            <option value="7">7월</option><option value="8">8월</option>
-            <option value="9">9월</option><option value="10">10월</option>
-            <option value="11">11월</option><option value="12">12월</option>
-          </select>
-        </div>
-        <div class="form-group">
-          <label>일</label>
-          <input type="number" id="todayDay" placeholder="15" min="1" max="31">
-        </div>
+        <div class="form-group"><label>태어난 해</label><input type="number" id="todayYear" placeholder="1990" min="1920" max="2025"></div>
+        <div class="form-group"><label>월</label><select id="todayMonth"><option value="">월</option><option value="1">1월</option><option value="2">2월</option><option value="3">3월</option><option value="4">4월</option><option value="5">5월</option><option value="6">6월</option><option value="7">7월</option><option value="8">8월</option><option value="9">9월</option><option value="10">10월</option><option value="11">11월</option><option value="12">12월</option></select></div>
+        <div class="form-group"><label>일</label><input type="number" id="todayDay" placeholder="15" min="1" max="31"></div>
       </div>
       <div class="form-row">
-        <div class="form-group">
-          <label>태어난 시간</label>
-          <select id="todayHour">
-            <option value="-1">모름</option>
-            <option value="0">자시 (23:30~01:30)</option>
-            <option value="1">축시 (01:30~03:30)</option>
-            <option value="3">인시 (03:30~05:30)</option>
-            <option value="5">묘시 (05:30~07:30)</option>
-            <option value="7">진시 (07:30~09:30)</option>
-            <option value="9">사시 (09:30~11:30)</option>
-            <option value="11">오시 (11:30~13:30)</option>
-            <option value="13">미시 (13:30~15:30)</option>
-            <option value="15">신시 (15:30~17:30)</option>
-            <option value="17">유시 (17:30~19:30)</option>
-            <option value="19">술시 (19:30~21:30)</option>
-            <option value="21">해시 (21:30~23:30)</option>
-          </select>
-        </div>
+        <div class="form-group"><label>태어난 시간</label><select id="todayHour"><option value="-1">모름</option><option value="0">자시 (23:30~01:30)</option><option value="1">축시 (01:30~03:30)</option><option value="3">인시 (03:30~05:30)</option><option value="5">묘시 (05:30~07:30)</option><option value="7">진시 (07:30~09:30)</option><option value="9">사시 (09:30~11:30)</option><option value="11">오시 (11:30~13:30)</option><option value="13">미시 (13:30~15:30)</option><option value="15">신시 (15:30~17:30)</option><option value="17">유시 (17:30~19:30)</option><option value="19">술시 (19:30~21:30)</option><option value="21">해시 (21:30~23:30)</option></select></div>
       </div>
       <div class="error-msg" id="todayError"></div>
       <button class="submit-btn" onclick="submitToday()">오늘의 운세 보기</button>
@@ -173,198 +334,70 @@
     <div id="todayResult"></div>
   </div>
 
-  <!-- 궁합 페이지 -->
+  <!-- ========== 궁합 ========== -->
   <div class="page" id="pageCompatibility">
+    <div class="form-page-header" id="compatFormHeader">
+      <h2>사주 궁합</h2>
+      <p>두 사람의 인연을 분석합니다</p>
+    </div>
     <div class="form-section" id="compatForm">
-      <h3>💕 사주 궁합</h3>
-
-      <p class="section-title">첫 번째 사람</p>
+      <div class="section-label">첫 번째 사람</div>
       <div class="gender-toggle">
-        <button class="gender-btn active" data-gender="male" onclick="selectGender(this, 'compat1')">👨 남성</button>
-        <button class="gender-btn" data-gender="female" onclick="selectGender(this, 'compat1')">👩 여성</button>
+        <button class="gender-btn active" data-gender="male" onclick="selectGender(this,'compat1')">남성</button>
+        <button class="gender-btn" data-gender="female" onclick="selectGender(this,'compat1')">여성</button>
       </div>
       <div class="form-row">
-        <div class="form-group">
-          <label>태어난 해</label>
-          <input type="number" id="compat1Year" placeholder="1990" min="1920" max="2025">
-        </div>
-        <div class="form-group">
-          <label>월</label>
-          <select id="compat1Month">
-            <option value="">월</option>
-            <option value="1">1월</option><option value="2">2월</option>
-            <option value="3">3월</option><option value="4">4월</option>
-            <option value="5">5월</option><option value="6">6월</option>
-            <option value="7">7월</option><option value="8">8월</option>
-            <option value="9">9월</option><option value="10">10월</option>
-            <option value="11">11월</option><option value="12">12월</option>
-          </select>
-        </div>
-        <div class="form-group">
-          <label>일</label>
-          <input type="number" id="compat1Day" placeholder="15" min="1" max="31">
-        </div>
+        <div class="form-group"><label>태어난 해</label><input type="number" id="compat1Year" placeholder="1990" min="1920" max="2025"></div>
+        <div class="form-group"><label>월</label><select id="compat1Month"><option value="">월</option><option value="1">1월</option><option value="2">2월</option><option value="3">3월</option><option value="4">4월</option><option value="5">5월</option><option value="6">6월</option><option value="7">7월</option><option value="8">8월</option><option value="9">9월</option><option value="10">10월</option><option value="11">11월</option><option value="12">12월</option></select></div>
+        <div class="form-group"><label>일</label><input type="number" id="compat1Day" placeholder="15" min="1" max="31"></div>
       </div>
       <div class="form-row">
-        <div class="form-group">
-          <label>태어난 시간</label>
-          <select id="compat1Hour">
-            <option value="-1">모름</option>
-            <option value="0">자시 (23:30~01:30)</option>
-            <option value="1">축시 (01:30~03:30)</option>
-            <option value="3">인시 (03:30~05:30)</option>
-            <option value="5">묘시 (05:30~07:30)</option>
-            <option value="7">진시 (07:30~09:30)</option>
-            <option value="9">사시 (09:30~11:30)</option>
-            <option value="11">오시 (11:30~13:30)</option>
-            <option value="13">미시 (13:30~15:30)</option>
-            <option value="15">신시 (15:30~17:30)</option>
-            <option value="17">유시 (17:30~19:30)</option>
-            <option value="19">술시 (19:30~21:30)</option>
-            <option value="21">해시 (21:30~23:30)</option>
-          </select>
-        </div>
+        <div class="form-group"><label>태어난 시간</label><select id="compat1Hour"><option value="-1">모름</option><option value="0">자시</option><option value="1">축시</option><option value="3">인시</option><option value="5">묘시</option><option value="7">진시</option><option value="9">사시</option><option value="11">오시</option><option value="13">미시</option><option value="15">신시</option><option value="17">유시</option><option value="19">술시</option><option value="21">해시</option></select></div>
       </div>
-
-      <div class="person-divider">
-        <div class="line"></div>
-        <span class="heart">💕</span>
-        <div class="line"></div>
-      </div>
-
-      <p class="section-title">두 번째 사람</p>
+      <div class="person-divider"><div class="line"></div><span class="heart">♥</span><div class="line"></div></div>
+      <div class="section-label">두 번째 사람</div>
       <div class="gender-toggle">
-        <button class="gender-btn" data-gender="male" onclick="selectGender(this, 'compat2')">👨 남성</button>
-        <button class="gender-btn active" data-gender="female" onclick="selectGender(this, 'compat2')">👩 여성</button>
+        <button class="gender-btn" data-gender="male" onclick="selectGender(this,'compat2')">남성</button>
+        <button class="gender-btn active" data-gender="female" onclick="selectGender(this,'compat2')">여성</button>
       </div>
       <div class="form-row">
-        <div class="form-group">
-          <label>태어난 해</label>
-          <input type="number" id="compat2Year" placeholder="1992" min="1920" max="2025">
-        </div>
-        <div class="form-group">
-          <label>월</label>
-          <select id="compat2Month">
-            <option value="">월</option>
-            <option value="1">1월</option><option value="2">2월</option>
-            <option value="3">3월</option><option value="4">4월</option>
-            <option value="5">5월</option><option value="6">6월</option>
-            <option value="7">7월</option><option value="8">8월</option>
-            <option value="9">9월</option><option value="10">10월</option>
-            <option value="11">11월</option><option value="12">12월</option>
-          </select>
-        </div>
-        <div class="form-group">
-          <label>일</label>
-          <input type="number" id="compat2Day" placeholder="20" min="1" max="31">
-        </div>
+        <div class="form-group"><label>태어난 해</label><input type="number" id="compat2Year" placeholder="1992" min="1920" max="2025"></div>
+        <div class="form-group"><label>월</label><select id="compat2Month"><option value="">월</option><option value="1">1월</option><option value="2">2월</option><option value="3">3월</option><option value="4">4월</option><option value="5">5월</option><option value="6">6월</option><option value="7">7월</option><option value="8">8월</option><option value="9">9월</option><option value="10">10월</option><option value="11">11월</option><option value="12">12월</option></select></div>
+        <div class="form-group"><label>일</label><input type="number" id="compat2Day" placeholder="20" min="1" max="31"></div>
       </div>
       <div class="form-row">
-        <div class="form-group">
-          <label>태어난 시간</label>
-          <select id="compat2Hour">
-            <option value="-1">모름</option>
-            <option value="0">자시 (23:30~01:30)</option>
-            <option value="1">축시 (01:30~03:30)</option>
-            <option value="3">인시 (03:30~05:30)</option>
-            <option value="5">묘시 (05:30~07:30)</option>
-            <option value="7">진시 (07:30~09:30)</option>
-            <option value="9">사시 (09:30~11:30)</option>
-            <option value="11">오시 (11:30~13:30)</option>
-            <option value="13">미시 (13:30~15:30)</option>
-            <option value="15">신시 (15:30~17:30)</option>
-            <option value="17">유시 (17:30~19:30)</option>
-            <option value="19">술시 (19:30~21:30)</option>
-            <option value="21">해시 (21:30~23:30)</option>
-          </select>
-        </div>
+        <div class="form-group"><label>태어난 시간</label><select id="compat2Hour"><option value="-1">모름</option><option value="0">자시</option><option value="1">축시</option><option value="3">인시</option><option value="5">묘시</option><option value="7">진시</option><option value="9">사시</option><option value="11">오시</option><option value="13">미시</option><option value="15">신시</option><option value="17">유시</option><option value="19">술시</option><option value="21">해시</option></select></div>
       </div>
-
       <div class="error-msg" id="compatError"></div>
       <button class="submit-btn" onclick="submitCompatibility()">궁합 보기</button>
     </div>
     <div id="compatResult"></div>
   </div>
 
-  <!-- 신년운세 페이지 -->
+  <!-- ========== 신년운세 ========== -->
   <div class="page" id="pageNewyear">
+    <div class="form-page-header" id="newyearFormHeader">
+      <h2>2026 신년운세</h2>
+      <p>병오년 월별 상세 운세</p>
+    </div>
     <div class="form-section" id="newyearForm">
-      <h3>🎆 2026 신년운세</h3>
       <div class="gender-toggle">
-        <button class="gender-btn active" data-gender="male" onclick="selectGender(this, 'newyear')">👨 남성</button>
-        <button class="gender-btn" data-gender="female" onclick="selectGender(this, 'newyear')">👩 여성</button>
+        <button class="gender-btn active" data-gender="male" onclick="selectGender(this,'newyear')">남성</button>
+        <button class="gender-btn" data-gender="female" onclick="selectGender(this,'newyear')">여성</button>
       </div>
       <div class="form-row">
-        <div class="form-group">
-          <label>태어난 해</label>
-          <input type="number" id="newyearYear" placeholder="1990" min="1920" max="2025">
-        </div>
-        <div class="form-group">
-          <label>월</label>
-          <select id="newyearMonth">
-            <option value="">월</option>
-            <option value="1">1월</option><option value="2">2월</option>
-            <option value="3">3월</option><option value="4">4월</option>
-            <option value="5">5월</option><option value="6">6월</option>
-            <option value="7">7월</option><option value="8">8월</option>
-            <option value="9">9월</option><option value="10">10월</option>
-            <option value="11">11월</option><option value="12">12월</option>
-          </select>
-        </div>
-        <div class="form-group">
-          <label>일</label>
-          <input type="number" id="newyearDay" placeholder="15" min="1" max="31">
-        </div>
+        <div class="form-group"><label>태어난 해</label><input type="number" id="newyearYear" placeholder="1990" min="1920" max="2025"></div>
+        <div class="form-group"><label>월</label><select id="newyearMonth"><option value="">월</option><option value="1">1월</option><option value="2">2월</option><option value="3">3월</option><option value="4">4월</option><option value="5">5월</option><option value="6">6월</option><option value="7">7월</option><option value="8">8월</option><option value="9">9월</option><option value="10">10월</option><option value="11">11월</option><option value="12">12월</option></select></div>
+        <div class="form-group"><label>일</label><input type="number" id="newyearDay" placeholder="15" min="1" max="31"></div>
       </div>
       <div class="form-row">
-        <div class="form-group">
-          <label>태어난 시간</label>
-          <select id="newyearHour">
-            <option value="-1">모름</option>
-            <option value="0">자시 (23:30~01:30)</option>
-            <option value="1">축시 (01:30~03:30)</option>
-            <option value="3">인시 (03:30~05:30)</option>
-            <option value="5">묘시 (05:30~07:30)</option>
-            <option value="7">진시 (07:30~09:30)</option>
-            <option value="9">사시 (09:30~11:30)</option>
-            <option value="11">오시 (11:30~13:30)</option>
-            <option value="13">미시 (13:30~15:30)</option>
-            <option value="15">신시 (15:30~17:30)</option>
-            <option value="17">유시 (17:30~19:30)</option>
-            <option value="19">술시 (19:30~21:30)</option>
-            <option value="21">해시 (21:30~23:30)</option>
-          </select>
-        </div>
+        <div class="form-group"><label>태어난 시간</label><select id="newyearHour"><option value="-1">모름</option><option value="0">자시</option><option value="1">축시</option><option value="3">인시</option><option value="5">묘시</option><option value="7">진시</option><option value="9">사시</option><option value="11">오시</option><option value="13">미시</option><option value="15">신시</option><option value="17">유시</option><option value="19">술시</option><option value="21">해시</option></select></div>
       </div>
       <div class="error-msg" id="newyearError"></div>
       <button class="submit-btn" onclick="submitNewYear()">2026 신년운세 보기</button>
     </div>
     <div id="newyearResult"></div>
   </div>
-
-  <!-- 하단 네비게이션 -->
-  <nav class="bottom-nav">
-    <button class="nav-item active" onclick="openPage('home')">
-      <span class="nav-icon">🏠</span>
-      <span class="nav-label">홈</span>
-    </button>
-    <button class="nav-item" onclick="openPage('basic')">
-      <span class="nav-icon">🔮</span>
-      <span class="nav-label">사주</span>
-    </button>
-    <button class="nav-item" onclick="openPage('today')">
-      <span class="nav-icon">📅</span>
-      <span class="nav-label">오늘</span>
-    </button>
-    <button class="nav-item" onclick="openPage('compatibility')">
-      <span class="nav-icon">💕</span>
-      <span class="nav-label">궁합</span>
-    </button>
-    <button class="nav-item" onclick="openPage('newyear')">
-      <span class="nav-icon">🎆</span>
-      <span class="nav-label">신년</span>
-    </button>
-  </nav>
 
   <script src="/js/app.js"></script>
 </body>
