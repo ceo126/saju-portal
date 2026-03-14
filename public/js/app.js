@@ -338,53 +338,408 @@ async function submitNewYear() {
   }
 }
 
+// ===== 신년운세 탭 전환 =====
+function switchNyTab(tabName) {
+  document.querySelectorAll('.ny-tab-item').forEach(t => {
+    t.classList.toggle('active', t.dataset.section === tabName);
+  });
+  document.querySelectorAll('.ny-section').forEach(s => {
+    s.classList.toggle('active', s.id === 'nySection_' + tabName);
+  });
+}
+
+// ===== 월별 점수 차트 렌더링 =====
+function renderMonthlyChart(scores) {
+  if (!scores || !Array.isArray(scores) || scores.length !== 12) return '';
+  let h = '<div class="monthly-chart">';
+  scores.forEach((score, i) => {
+    const s = Math.max(0, Math.min(100, parseInt(score) || 50));
+    const cls = s >= 80 ? 'score-high' : s >= 50 ? 'score-mid' : 'score-low';
+    h += `<div class="monthly-bar">
+      <div class="bar-label">${i + 1}월</div>
+      <div class="bar-track"><div class="bar-fill ${cls}" style="width:${Math.max(s, 8)}%"><span class="bar-score">${s}</span></div></div>
+    </div>`;
+  });
+  h += '</div>';
+  return h;
+}
+
+// ===== 신년운세 상세 렌더링 =====
 function renderNewYearResult(data) {
-  const { saju, interpretation: interp } = data;
+  const { saju, seunAnalysis: sa, interpretation: interp } = data;
   if (!interp) {
     document.getElementById('newyearResult').innerHTML = `<div class="result-card"><p style="text-align:center;color:var(--accent)">AI 분석 실패</p><button class="retry-btn" onclick="resetForm('newyear')">다시 시도</button></div>`;
     return;
   }
+  const cg = interp.chongun || {};
+  const wt = interp.wealth || {};
+  const lv = interp.love || {};
+  const ht = interp.health || {};
+  const cr = interp.career || {};
+
   let h = '';
+
+  // 히어로
   h += `<div class="newyear-hero">
     <div class="ny-emoji">🐴</div>
     <div class="ny-year">2026 병오년</div>
     <div class="ny-sub">${esc(saju.personality.title)} · ${esc(saju.ilgan)}일간의 신년운세</div>
-    <div class="ny-theme">${esc(interp.year_theme)}</div>
+    <div class="ny-theme">${esc(cg.year_theme || '')}</div>
+    ${cg.year_keyword ? `<div class="ny-keyword-badge">${esc(cg.year_keyword)}</div>` : ''}
   </div>`;
 
-  h += `<div class="result-card"><h3>2026년 총운</h3><div class="interp-block"><p>${esc(interp.year_overview)}</p></div></div>`;
-  h += `<div class="result-card"><h3>분야별 운세</h3>
-    <div class="interp-block"><h4>직업/사업운</h4><p>${esc(interp.career_year)}</p></div>
-    <div class="interp-block"><h4>재물운</h4><p>${esc(interp.wealth_year)}</p></div>
-    <div class="interp-block"><h4>연애/결혼운</h4><p>${esc(interp.love_year)}</p></div>
-    <div class="interp-block"><h4>건강운</h4><p>${esc(interp.health_year)}</p></div>
+  // 섹션 탭
+  h += `<div class="ny-section-tabs">
+    <button class="ny-tab-item active" data-section="chongun" onclick="switchNyTab('chongun')">총운</button>
+    <button class="ny-tab-item" data-section="wealth" onclick="switchNyTab('wealth')">재물운</button>
+    <button class="ny-tab-item" data-section="love" onclick="switchNyTab('love')">애정운</button>
+    <button class="ny-tab-item" data-section="health" onclick="switchNyTab('health')">건강운</button>
+    <button class="ny-tab-item" data-section="career" onclick="switchNyTab('career')">직업운</button>
   </div>`;
 
-  if (interp.monthly) {
-    h += `<div class="result-card"><h3>월별 운세</h3><div class="monthly-grid">`;
-    interp.monthly.forEach(m => {
-      const isBest = interp.best_months && interp.best_months.includes(m.month);
-      const isCaution = interp.caution_months && interp.caution_months.includes(m.month);
-      h += `<div class="month-card ${isBest?'best':isCaution?'caution':''}">
-        <div class="mc-num">${m.month}월 ${isBest?'★':isCaution?'⚠':''}</div>
-        <div class="mc-title">${esc(m.title)}</div>
-        <div class="mc-desc">${esc(m.desc)}</div>
-      </div>`;
+  // ===== 총운 섹션 =====
+  h += `<div class="ny-section active" id="nySection_chongun">`;
+
+  // 사주원국 테이블 (십성 포함)
+  const pillars = [saju.yearPillar, saju.monthPillar, saju.dayPillar];
+  if (saju.hourPillar) pillars.push(saju.hourPillar);
+
+  h += `<div class="result-card"><h3>사주원국</h3><div class="ny-saju-table">`;
+  pillars.forEach(p => {
+    const key = p.name === '년주' ? 'yearPillar' : p.name === '월주' ? 'monthPillar' : p.name === '일주' ? 'dayPillar' : 'hourPillar';
+    const sp = sa && sa.pillarSipsung && sa.pillarSipsung[key];
+    const cSip = sp ? sp.cheonganSipsung : '';
+    const jSip = sp ? sp.jijiSipsung : '';
+    h += `<div class="ny-saju-col">
+      <div class="col-sipsung">${esc(cSip)}</div>
+      <div class="col-label">${esc(p.name)}</div>
+      <div class="col-top" style="color:${p.cheonganColor}">${esc(p.cheonganHanja)}</div>
+      <div class="col-bottom" style="color:${p.jijiColor}">${esc(p.jijiHanja)}</div>
+      <div class="col-sipsung-bottom">${esc(jSip)}</div>
+      <div class="col-korean">${esc(p.cheongan)}${esc(p.jiji)}</div>
+    </div>`;
+  });
+  h += `</div>`;
+
+  // 세운 정보
+  if (sa) {
+    h += `<div class="seun-info-card">
+      <div class="sic-row"><span class="sic-label">2026 세운</span><span class="sic-value">병오(丙午) 화(火)</span></div>
+      <div class="sic-row"><span class="sic-label">세운 천간 십성</span><span class="sic-value">${esc(sa.seunCheonganSipsung)}</span></div>
+      <div class="sic-row"><span class="sic-label">세운 지지 십성</span><span class="sic-value">${esc(sa.seunJijiSipsung)}</span></div>
+      <div class="sic-row"><span class="sic-label">신강/신약</span><span class="sic-value">${esc(sa.singang)}</span></div>
+      <div class="sic-badges">`;
+    if (sa.chungList && sa.chungList.length > 0) {
+      sa.chungList.forEach(c => {
+        h += `<span class="seun-badge chung">${esc(c.pillar)} ${esc(c.jiji)}-${esc(c.seunJiji)} 충</span>`;
+      });
+    }
+    if (sa.hapList && sa.hapList.length > 0) {
+      sa.hapList.forEach(hp => {
+        h += `<span class="seun-badge hap">${esc(hp.pillar)} ${esc(hp.jiji)}-${esc(hp.seunJiji)} 합</span>`;
+      });
+    }
+    if (sa.cheonganHapList && sa.cheonganHapList.length > 0) {
+      sa.cheonganHapList.forEach(hp => {
+        h += `<span class="seun-badge hap">${esc(hp.pillar)} ${esc(hp.cheongan)}-${esc(hp.seunCheongan)} 천간합</span>`;
+      });
+    }
+    h += `</div></div>`;
+  }
+
+  // 음양 바
+  const ey = saju.eumyangRatio;
+  const yPct = Math.round((ey.yang / ey.total) * 100);
+  h += `<div class="eumyang-bar-wrap"><div class="eumyang-bar"><div class="yang" style="width:${yPct}%"></div><div class="eum" style="width:${100 - yPct}%"></div></div><div class="eumyang-labels"><span>양 ${ey.yang}</span><span>음 ${ey.eum}</span></div></div>`;
+  h += `</div>`; // end result-card
+
+  // 오행 차트
+  const oh = saju.ohengAnalysis;
+  h += `<div class="result-card"><h3>오행 비율</h3><div class="oheng-chart">`;
+  [{k:'목',c:'wood',e:'🌳'},{k:'화',c:'fire',e:'🔥'},{k:'토',c:'earth',e:'⛰️'},{k:'금',c:'metal',e:'⚔️'},{k:'수',c:'water',e:'💧'}].forEach(o => {
+    const pct = oh.percentages[o.k];
+    h += `<div class="oheng-row"><div class="oh-label">${o.e} ${o.k}</div><div class="oh-bar-wrap"><div class="oh-bar ${o.c}" style="width:${Math.max(pct, 5)}%">${pct}%</div></div></div>`;
+  });
+  if (oh.missing.length) h += `<div class="oheng-missing">부족한 오행: ${oh.missing.join(', ')}</div>`;
+  h += `</div></div>`;
+
+  // 총운 내용
+  h += `<div class="result-card"><h3>2026년 총운</h3><div class="interp-block"><p>${esc(cg.year_overview)}</p></div></div>`;
+
+  // 기회와 위기
+  h += `<div class="result-card"><h3>기회와 위기</h3>`;
+  h += `<div class="fortune-card good"><h4>기회 요인</h4><p>${esc(cg.opportunity)}</p></div>`;
+  h += `<div class="fortune-card warning"><h4>위기 요인</h4><p>${esc(cg.crisis)}</p></div>`;
+  h += `</div>`;
+
+  // 대인관계
+  if (cg.relationship_overview) {
+    h += `<div class="result-card"><h3>대인관계</h3><div class="interp-block"><p>${esc(cg.relationship_overview)}</p></div></div>`;
+  }
+
+  // 종합 조언
+  if (cg.advice) {
+    h += `<div class="result-card" style="background:#fafafa"><h3>핵심 조언</h3><div class="fortune-card info"><p>${esc(cg.advice)}</p></div></div>`;
+  }
+
+  h += `</div>`; // end chongun section
+
+  // ===== 재물운 섹션 =====
+  h += `<div class="ny-section" id="nySection_wealth">`;
+  h += `<div class="result-card"><h3>2026년 재물운</h3><div class="interp-block"><p>${esc(wt.overview)}</p></div></div>`;
+
+  h += `<div class="result-card"><h3>월별 재물운 점수</h3>${renderMonthlyChart(wt.monthly_scores)}</div>`;
+
+  // 좋은/나쁜 시기
+  h += `<div class="result-card"><h3>주요 시기</h3>`;
+  if (wt.good_months) {
+    wt.good_months.forEach(m => {
+      h += `<div class="month-point-card good"><div class="mpc-month">${m.month}월</div><div class="mpc-text">${esc(m.reason)}</div></div>`;
+    });
+  }
+  if (wt.bad_months) {
+    wt.bad_months.forEach(m => {
+      h += `<div class="month-point-card bad"><div class="mpc-month">${m.month}월</div><div class="mpc-text">${esc(m.reason)}</div></div>`;
+    });
+  }
+  h += `</div>`;
+
+  // 전략
+  if (wt.strategy && wt.strategy.length) {
+    h += `<div class="result-card"><h3>재물 전략</h3>`;
+    wt.strategy.forEach(s => {
+      h += `<div class="strategy-card"><p>${esc(s)}</p></div>`;
+    });
+    h += `</div>`;
+  }
+
+  // 주의 인물
+  if (wt.warning_people && wt.warning_people.length) {
+    h += `<div class="result-card"><h3>주의할 인물 유형</h3>`;
+    wt.warning_people.forEach(w => {
+      h += `<div class="people-card dangerous"><div class="pc-desc">${esc(w)}</div></div>`;
+    });
+    h += `</div>`;
+  }
+
+  if (wt.summary) {
+    h += `<div class="result-card" style="background:#fafafa"><h3>재물운 총평</h3><div class="interp-block"><p>${esc(wt.summary)}</p></div></div>`;
+  }
+  h += `</div>`; // end wealth section
+
+  // ===== 애정운 섹션 =====
+  h += `<div class="ny-section" id="nySection_love">`;
+  h += `<div class="result-card"><h3>2026년 애정운</h3><div class="interp-block"><p>${esc(lv.overview)}</p></div></div>`;
+
+  h += `<div class="result-card"><h3>월별 애정운 점수</h3>${renderMonthlyChart(lv.monthly_scores)}</div>`;
+
+  // 이상적 파트너
+  if (lv.ideal_partner) {
+    const ip = lv.ideal_partner;
+    h += `<div class="result-card"><h3>이상적인 파트너</h3>
+      <div class="partner-profile">
+        <div class="pp-row"><span class="pp-label">성격</span><span class="pp-value">${esc(ip.personality)}</span></div>
+        <div class="pp-row"><span class="pp-label">외적</span><span class="pp-value">${esc(ip.appearance)}</span></div>
+        <div class="pp-row"><span class="pp-label">직업</span><span class="pp-value">${esc(ip.job_field)}</span></div>
+        ${ip.tags ? `<div class="pp-tags">${ip.tags.map(t => `<span class="tag">${esc(t)}</span>`).join('')}</div>` : ''}
+      </div>
+    </div>`;
+  }
+
+  // 미혼 조언
+  if (lv.single_advice) {
+    const sa2 = lv.single_advice;
+    h += `<div class="result-card"><h3>미혼을 위한 조언</h3>`;
+    if (sa2.good_months) {
+      sa2.good_months.forEach(m => {
+        h += `<div class="month-point-card good"><div class="mpc-month">${m.month}월</div><div class="mpc-text">${esc(m.strategy)}</div></div>`;
+      });
+    }
+    if (sa2.bad_months) {
+      sa2.bad_months.forEach(m => {
+        h += `<div class="month-point-card bad"><div class="mpc-month">${m.month}월</div><div class="mpc-text">${esc(m.warning)}</div></div>`;
+      });
+    }
+    if (sa2.meeting_places) {
+      h += `<div class="fortune-card info"><h4>추천 만남 장소</h4><p>${esc(sa2.meeting_places)}</p></div>`;
+    }
+    if (sa2.charm_items) {
+      h += `<div class="fortune-card good"><h4>매력 아이템</h4><p>${esc(sa2.charm_items)}</p></div>`;
+    }
+    h += `</div>`;
+  }
+
+  // 커플 조언
+  if (lv.couple_advice) {
+    const ca = lv.couple_advice;
+    h += `<div class="result-card"><h3>커플을 위한 조언</h3>`;
+    if (ca.good_months) {
+      ca.good_months.forEach(m => {
+        h += `<div class="month-point-card good"><div class="mpc-month">${m.month}월</div><div class="mpc-text">${esc(m.tip)}</div></div>`;
+      });
+    }
+    if (ca.bad_months) {
+      ca.bad_months.forEach(m => {
+        h += `<div class="month-point-card bad"><div class="mpc-month">${m.month}월</div><div class="mpc-text">${esc(m.warning)}</div></div>`;
+      });
+    }
+    if (ca.couple_items) {
+      h += `<div class="fortune-card info"><h4>커플 아이템</h4><p>${esc(ca.couple_items)}</p></div>`;
+    }
+    if (ca.date_spots) {
+      h += `<div class="fortune-card good"><h4>추천 데이트</h4><p>${esc(ca.date_spots)}</p></div>`;
+    }
+    h += `</div>`;
+  }
+
+  if (lv.summary) {
+    h += `<div class="result-card" style="background:#fafafa"><h3>애정운 총평</h3><div class="interp-block"><p>${esc(lv.summary)}</p></div></div>`;
+  }
+  h += `</div>`; // end love section
+
+  // ===== 건강운 섹션 =====
+  h += `<div class="ny-section" id="nySection_health">`;
+  h += `<div class="result-card"><h3>2026년 건강운</h3><div class="interp-block"><p>${esc(ht.overview)}</p></div></div>`;
+
+  if (ht.constitution) {
+    h += `<div class="result-card"><h3>타고난 체질</h3><div class="interp-block"><p>${esc(ht.constitution)}</p></div></div>`;
+  }
+
+  h += `<div class="result-card"><h3>월별 건강운 점수</h3>${renderMonthlyChart(ht.monthly_scores)}</div>`;
+
+  // 주의 질환
+  if (ht.diseases && ht.diseases.length) {
+    h += `<div class="result-card"><h3>주의 질환</h3>`;
+    ht.diseases.forEach(d => {
+      h += `<div class="fortune-card warning"><h4>${esc(d.name)}</h4><p>${esc(d.desc)}</p></div>`;
+    });
+    h += `</div>`;
+  }
+
+  // 좋은/나쁜 음식
+  if ((ht.good_foods && ht.good_foods.length) || (ht.bad_foods && ht.bad_foods.length)) {
+    h += `<div class="result-card"><h3>음식 가이드</h3><div class="food-grid">`;
+    if (ht.good_foods) {
+      ht.good_foods.forEach(f => {
+        h += `<div class="food-item good"><div class="fi-name">O ${esc(f.name)}</div><div class="fi-reason">${esc(f.reason)}</div></div>`;
+      });
+    }
+    if (ht.bad_foods) {
+      ht.bad_foods.forEach(f => {
+        h += `<div class="food-item bad"><div class="fi-name">X ${esc(f.name)}</div><div class="fi-reason">${esc(f.reason)}</div></div>`;
+      });
+    }
+    h += `</div></div>`;
+  }
+
+  // 영양제
+  if (ht.supplements && ht.supplements.length) {
+    h += `<div class="result-card"><h3>추천 영양제</h3><div class="food-grid">`;
+    ht.supplements.forEach(s => {
+      h += `<div class="food-item good"><div class="fi-name">${esc(s.name)}</div><div class="fi-reason">${esc(s.reason)}</div></div>`;
     });
     h += `</div></div>`;
   }
 
-  if (interp.lucky) {
-    h += `<div class="result-card"><h3>2026년 행운 요소</h3><div class="lucky-grid">
-      <div class="lucky-item"><div class="lk-label">행운의 색</div><div class="lk-value">${esc(interp.lucky.color)}</div></div>
-      <div class="lucky-item"><div class="lk-label">행운의 숫자</div><div class="lk-value">${esc(interp.lucky.number)}</div></div>
-      <div class="lucky-item"><div class="lk-label">행운의 방향</div><div class="lk-value">${esc(interp.lucky.direction)}</div></div>
-    </div></div>`;
+  // 운동
+  if ((ht.good_exercises && ht.good_exercises.length) || (ht.bad_exercises && ht.bad_exercises.length)) {
+    h += `<div class="result-card"><h3>운동 가이드</h3><div class="food-grid">`;
+    if (ht.good_exercises) {
+      ht.good_exercises.forEach(e => {
+        h += `<div class="food-item good"><div class="fi-name">O ${esc(e.name)}</div><div class="fi-reason">${esc(e.reason)}</div></div>`;
+      });
+    }
+    if (ht.bad_exercises) {
+      ht.bad_exercises.forEach(e => {
+        h += `<div class="food-item bad"><div class="fi-name">X ${esc(e.name)}</div><div class="fi-reason">${esc(e.reason)}</div></div>`;
+      });
+    }
+    h += `</div></div>`;
   }
-  if (interp.final_advice) {
-    h += `<div class="result-card" style="background:#fafafa"><h3>2026년 종합 조언</h3><div class="interp-block"><p>${esc(interp.final_advice)}</p></div></div>`;
+
+  // 생활습관
+  if ((ht.lifestyle_good && ht.lifestyle_good.length) || (ht.lifestyle_bad && ht.lifestyle_bad.length)) {
+    h += `<div class="result-card"><h3>생활습관 가이드</h3><div class="lifestyle-list">`;
+    if (ht.lifestyle_good) {
+      ht.lifestyle_good.forEach(l => {
+        h += `<div class="lifestyle-item"><span class="li-icon">O</span><div class="li-content"><div class="li-habit">${esc(l.habit)}</div><div class="li-reason">${esc(l.reason)}</div></div></div>`;
+      });
+    }
+    if (ht.lifestyle_bad) {
+      ht.lifestyle_bad.forEach(l => {
+        h += `<div class="lifestyle-item"><span class="li-icon">X</span><div class="li-content"><div class="li-habit">${esc(l.habit)}</div><div class="li-reason">${esc(l.reason)}</div></div></div>`;
+      });
+    }
+    h += `</div></div>`;
   }
+
+  if (ht.summary) {
+    h += `<div class="result-card" style="background:#fafafa"><h3>건강운 총평</h3><div class="interp-block"><p>${esc(ht.summary)}</p></div></div>`;
+  }
+  h += `</div>`; // end health section
+
+  // ===== 직업운 섹션 =====
+  h += `<div class="ny-section" id="nySection_career">`;
+  h += `<div class="result-card"><h3>2026년 직업운</h3><div class="interp-block"><p>${esc(cr.overview)}</p></div></div>`;
+
+  h += `<div class="result-card"><h3>월별 직업운 점수</h3>${renderMonthlyChart(cr.monthly_scores)}</div>`;
+
+  if (cr.reputation) {
+    h += `<div class="result-card"><h3>평판 분석</h3><div class="interp-block"><p>${esc(cr.reputation)}</p></div></div>`;
+  }
+
+  // 도움/위험 인물
+  if ((cr.helpful_people && cr.helpful_people.length) || (cr.dangerous_people && cr.dangerous_people.length)) {
+    h += `<div class="result-card"><h3>주변 인물 분석</h3>`;
+    if (cr.helpful_people) {
+      cr.helpful_people.forEach(p => {
+        h += `<div class="people-card helpful"><div class="pc-type">도움: ${esc(p.type)}</div><div class="pc-desc">${esc(p.desc)}</div></div>`;
+      });
+    }
+    if (cr.dangerous_people) {
+      cr.dangerous_people.forEach(p => {
+        h += `<div class="people-card dangerous"><div class="pc-type">주의: ${esc(p.type)}</div><div class="pc-desc">${esc(p.desc)}</div></div>`;
+      });
+    }
+    h += `</div>`;
+  }
+
+  // 직장인/사업가 조언
+  if (cr.employee_advice || cr.business_advice) {
+    h += `<div class="result-card"><h3>맞춤 조언</h3>`;
+    if (cr.employee_advice) {
+      h += `<div class="fortune-card info"><h4>직장인</h4><p>${esc(cr.employee_advice)}</p></div>`;
+    }
+    if (cr.business_advice) {
+      h += `<div class="fortune-card good"><h4>사업가</h4><p>${esc(cr.business_advice)}</p></div>`;
+    }
+    h += `</div>`;
+  }
+
+  // 좋은/나쁜 시기
+  if ((cr.good_months && cr.good_months.length) || (cr.bad_months && cr.bad_months.length)) {
+    h += `<div class="result-card"><h3>주요 시기</h3>`;
+    if (cr.good_months) {
+      cr.good_months.forEach(m => {
+        h += `<div class="month-point-card good"><div class="mpc-month">${m.month}월</div><div class="mpc-text">${esc(m.opportunity)}</div></div>`;
+      });
+    }
+    if (cr.bad_months) {
+      cr.bad_months.forEach(m => {
+        h += `<div class="month-point-card bad"><div class="mpc-month">${m.month}월</div><div class="mpc-text">${esc(m.warning)}</div></div>`;
+      });
+    }
+    h += `</div>`;
+  }
+
+  if (cr.summary) {
+    h += `<div class="result-card" style="background:#fafafa"><h3>직업운 총평</h3><div class="interp-block"><p>${esc(cr.summary)}</p></div></div>`;
+  }
+  h += `</div>`; // end career section
+
+  // 다시 분석하기 버튼
   h += `<div class="result-card"><button class="retry-btn" onclick="resetForm('newyear')">다시 분석하기</button></div>`;
+
   document.getElementById('newyearResult').innerHTML = h;
 }
 

@@ -92,16 +92,17 @@ app.post('/api/saju/today', async (req, res) => {
   }
 });
 
-// 2026 신년운세
+// 2026 신년운세 (상세 5섹션)
 app.post('/api/saju/newyear', async (req, res) => {
   try {
     const input = parseBirthInput(req.body);
     if (input.error) return res.status(400).json({ error: input.error });
 
     const sajuResult = sajuEngine.calculate(input.year, input.month, input.day, input.hour, input.gender);
-    const interpretation = await interpreter.interpretNewYear(sajuResult);
+    const seunAnalysis = sajuEngine.getSeunAnalysis(sajuResult);
+    const interpretation = await interpreter.interpretNewYearDetailed(sajuResult, seunAnalysis);
 
-    res.json({ success: true, saju: sajuResult, interpretation });
+    res.json({ success: true, saju: sajuResult, seunAnalysis, interpretation });
   } catch (e) {
     console.error('신년운세 오류:', e);
     res.status(500).json({ error: '신년운세 분석 중 오류가 발생했습니다' });

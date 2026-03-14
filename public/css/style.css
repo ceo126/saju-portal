@@ -847,6 +847,411 @@ body {
   font-size: 0.78rem; color: rgba(255,255,255,0.9);
 }
 
+/* ===== 신년운세 상세 섹션 탭 ===== */
+.ny-section-tabs {
+  display: flex;
+  gap: 0;
+  background: #fff;
+  border-bottom: 1px solid var(--border);
+  position: sticky;
+  top: 56px;
+  z-index: 50;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+.ny-section-tabs::-webkit-scrollbar { display: none; }
+.ny-tab-item {
+  flex: 1;
+  min-width: 0;
+  text-align: center;
+  padding: 12px 4px;
+  font-size: 0.82rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+  cursor: pointer;
+  border: none;
+  background: none;
+  position: relative;
+  transition: var(--transition);
+  white-space: nowrap;
+}
+.ny-tab-item.active {
+  font-weight: 700;
+  color: var(--accent);
+}
+.ny-tab-item.active::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 24px;
+  height: 2.5px;
+  background: var(--accent);
+  border-radius: 2px;
+}
+
+.ny-section {
+  display: none;
+  animation: fadeIn 0.25s ease;
+}
+.ny-section.active {
+  display: block;
+}
+
+/* 사주원국 테이블 (신년운세용 - 십성 포함) */
+.ny-saju-table {
+  display: flex;
+  gap: 4px;
+  justify-content: center;
+  margin: 16px 0 20px;
+}
+.ny-saju-col {
+  flex: 1;
+  text-align: center;
+  max-width: 90px;
+}
+.ny-saju-col .col-sipsung {
+  font-size: 0.6rem;
+  color: var(--accent);
+  font-weight: 700;
+  margin-bottom: 2px;
+  min-height: 14px;
+}
+.ny-saju-col .col-label {
+  font-size: 0.65rem;
+  color: var(--text-muted);
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+.ny-saju-col .col-top,
+.ny-saju-col .col-bottom {
+  padding: 8px 4px;
+  font-size: 1.4rem;
+  font-weight: 800;
+  border-radius: var(--radius-xs);
+}
+.ny-saju-col .col-top {
+  background: #fafafa;
+  border: 1px solid var(--border);
+  border-bottom: none;
+  border-radius: var(--radius-xs) var(--radius-xs) 0 0;
+}
+.ny-saju-col .col-bottom {
+  background: #f5f5f5;
+  border: 1px solid var(--border);
+  border-top: 1px dashed #e0e0e0;
+  border-radius: 0 0 var(--radius-xs) var(--radius-xs);
+}
+.ny-saju-col .col-sipsung-bottom {
+  font-size: 0.6rem;
+  color: #2d8cf0;
+  font-weight: 700;
+  margin-top: 2px;
+  min-height: 14px;
+}
+.ny-saju-col .col-korean {
+  font-size: 0.68rem;
+  color: var(--text-secondary);
+  margin-top: 3px;
+}
+
+/* 월별 점수 차트 (수평 바) */
+.monthly-chart {
+  margin: 16px 0;
+}
+.monthly-bar {
+  display: flex;
+  align-items: center;
+  margin-bottom: 6px;
+  gap: 6px;
+}
+.monthly-bar .bar-label {
+  width: 32px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-align: right;
+  flex-shrink: 0;
+}
+.monthly-bar .bar-track {
+  flex: 1;
+  height: 22px;
+  background: #f5f5f5;
+  border-radius: 11px;
+  overflow: hidden;
+  position: relative;
+}
+.monthly-bar .bar-fill {
+  height: 100%;
+  border-radius: 11px;
+  transition: width 1s ease;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding-right: 8px;
+  min-width: 28px;
+}
+.monthly-bar .bar-score {
+  font-size: 0.65rem;
+  font-weight: 700;
+  color: #fff;
+}
+.bar-fill.score-high { background: linear-gradient(90deg, #22c55e, #059669); }
+.bar-fill.score-mid { background: linear-gradient(90deg, #f59e0b, #d97706); }
+.bar-fill.score-low { background: linear-gradient(90deg, #ef4444, #dc2626); }
+
+/* 운세 카드 (기회/위기/조언) */
+.fortune-card {
+  background: #fafafa;
+  border-radius: var(--radius-xs);
+  padding: 16px;
+  margin-bottom: 12px;
+  border-left: 3px solid var(--accent);
+}
+.fortune-card.good {
+  border-left-color: #059669;
+  background: #f0fdf4;
+}
+.fortune-card.warning {
+  border-left-color: #d97706;
+  background: #fffbeb;
+}
+.fortune-card.info {
+  border-left-color: #3b82f6;
+  background: #eff6ff;
+}
+.fortune-card h4 {
+  font-size: 0.9rem;
+  font-weight: 700;
+  margin-bottom: 8px;
+  color: var(--text-primary);
+}
+.fortune-card p {
+  font-size: 0.85rem;
+  line-height: 1.7;
+  color: #333;
+}
+
+/* 파트너 프로필 카드 */
+.partner-profile {
+  background: linear-gradient(135deg, #fce8ec, #f0e6ff);
+  border-radius: var(--radius-sm);
+  padding: 20px;
+  margin: 12px 0;
+}
+.partner-profile h4 {
+  font-size: 0.95rem;
+  font-weight: 700;
+  margin-bottom: 12px;
+  color: var(--text-primary);
+}
+.partner-profile .pp-row {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.partner-profile .pp-label {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--accent);
+  min-width: 52px;
+}
+.partner-profile .pp-value {
+  font-size: 0.82rem;
+  color: #333;
+  line-height: 1.5;
+}
+.partner-profile .pp-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 10px;
+}
+.partner-profile .pp-tags .tag {
+  background: rgba(255,255,255,0.7);
+  color: var(--accent);
+  font-weight: 600;
+  font-size: 0.72rem;
+  padding: 4px 10px;
+  border-radius: 20px;
+}
+
+/* 음식/영양제 그리드 */
+.food-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin: 12px 0;
+}
+.food-item {
+  background: #fafafa;
+  border-radius: var(--radius-xs);
+  padding: 12px;
+  border: 1px solid var(--border);
+}
+.food-item.good { border-left: 3px solid #059669; }
+.food-item.bad { border-left: 3px solid #ef4444; }
+.food-item .fi-name {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 4px;
+}
+.food-item .fi-reason {
+  font-size: 0.72rem;
+  color: var(--text-secondary);
+  line-height: 1.4;
+}
+
+/* 사람 유형 카드 */
+.people-card {
+  background: #fafafa;
+  border-radius: var(--radius-xs);
+  padding: 14px;
+  margin-bottom: 8px;
+  border: 1px solid var(--border);
+}
+.people-card.helpful { border-left: 3px solid #059669; }
+.people-card.dangerous { border-left: 3px solid #ef4444; }
+.people-card .pc-type {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 4px;
+}
+.people-card .pc-desc {
+  font-size: 0.8rem;
+  color: #555;
+  line-height: 1.6;
+}
+
+/* 전략 카드 */
+.strategy-card {
+  background: #f8fafc;
+  border-radius: var(--radius-xs);
+  padding: 14px;
+  margin-bottom: 8px;
+  border: 1px solid var(--border);
+  border-left: 3px solid #3b82f6;
+}
+.strategy-card p {
+  font-size: 0.83rem;
+  line-height: 1.6;
+  color: #333;
+}
+
+/* 월 포인트 카드 (좋은달/나쁜달) */
+.month-point-card {
+  display: flex;
+  gap: 10px;
+  padding: 12px;
+  border-radius: var(--radius-xs);
+  margin-bottom: 8px;
+  border: 1px solid var(--border);
+}
+.month-point-card.good { background: #f0fdf4; border-left: 3px solid #059669; }
+.month-point-card.bad { background: #fef2f2; border-left: 3px solid #ef4444; }
+.month-point-card .mpc-month {
+  font-size: 1.1rem;
+  font-weight: 900;
+  color: var(--text-primary);
+  min-width: 32px;
+}
+.month-point-card .mpc-text {
+  font-size: 0.8rem;
+  color: #555;
+  line-height: 1.6;
+}
+
+/* 세운 분석 배지 */
+.seun-badge {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 12px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  margin: 2px;
+}
+.seun-badge.chung { background: #fef2f2; color: #dc2626; }
+.seun-badge.hap { background: #f0fdf4; color: #059669; }
+.seun-badge.sipsung { background: #eff6ff; color: #2563eb; }
+
+/* 라이프스타일 목록 */
+.lifestyle-list {
+  margin: 8px 0;
+}
+.lifestyle-item {
+  display: flex;
+  gap: 8px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--border);
+  align-items: flex-start;
+}
+.lifestyle-item:last-child { border-bottom: none; }
+.lifestyle-item .li-icon {
+  font-size: 0.9rem;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+.lifestyle-item .li-content {
+  flex: 1;
+}
+.lifestyle-item .li-habit {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+.lifestyle-item .li-reason {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  margin-top: 2px;
+}
+
+/* 세운 정보 카드 */
+.seun-info-card {
+  background: linear-gradient(135deg, #1a0a2e 0%, #2d1b4e 100%);
+  border-radius: var(--radius-sm);
+  padding: 16px;
+  margin: 12px 0;
+  color: #fff;
+}
+.seun-info-card .sic-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+.seun-info-card .sic-label {
+  font-size: 0.72rem;
+  color: rgba(255,255,255,0.6);
+  font-weight: 600;
+}
+.seun-info-card .sic-value {
+  font-size: 0.82rem;
+  color: #fff;
+  font-weight: 700;
+}
+.seun-info-card .sic-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 8px;
+}
+
+/* 신년운세 키워드 배지 */
+.ny-keyword-badge {
+  display: inline-block;
+  background: rgba(255,255,255,0.15);
+  color: rgba(255,255,255,0.95);
+  padding: 6px 16px;
+  border-radius: 20px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  margin-top: 8px;
+  letter-spacing: 2px;
+}
+
 /* ===== 푸터 ===== */
 .site-footer {
   padding: 28px 20px;
