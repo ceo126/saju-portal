@@ -1,7 +1,8 @@
 // ===== 전역 상태 =====
 const state = {
   currentPage: 'home',
-  genders: { basic: 'male', today: 'male', compat1: 'male', compat2: 'female', newyear: 'male' }
+  genders: { basic: 'male', today: 'male', compat1: 'male', compat2: 'female', newyear: 'male' },
+  loading: false
 };
 
 // ===== XSS 방지: HTML 이스케이프 =====
@@ -47,11 +48,12 @@ function selectGender(btn, formType) {
 
 // ===== 유효성 =====
 function validateForm(prefix) {
-  const y = document.getElementById(`${prefix}Year`).value;
-  const m = document.getElementById(`${prefix}Month`).value;
-  const d = document.getElementById(`${prefix}Day`).value;
-  if (!y || !m || !d) return { valid: false, error: '생년월일을 모두 입력해주세요' };
+  const y = parseInt(document.getElementById(`${prefix}Year`).value);
+  const m = parseInt(document.getElementById(`${prefix}Month`).value);
+  const d = parseInt(document.getElementById(`${prefix}Day`).value);
+  if (isNaN(y) || isNaN(m) || isNaN(d)) return { valid: false, error: '생년월일을 모두 입력해주세요' };
   if (y < 1920 || y > 2025) return { valid: false, error: '1920~2025년 사이로 입력해주세요' };
+  if (m < 1 || m > 12) return { valid: false, error: '올바른 월을 입력해주세요' };
   if (d < 1 || d > 31) return { valid: false, error: '올바른 일자를 입력해주세요' };
   return { valid: true };
 }
@@ -71,30 +73,50 @@ function showAnalyzing(targetId) {
     </div>`;
 }
 
+// ===== 버튼 비활성화 (중복 요청 방지) =====
+function setSubmitButtons(disabled) {
+  state.loading = disabled;
+  document.querySelectorAll('.submit-btn').forEach(btn => {
+    btn.disabled = disabled;
+  });
+}
+
 async function apiCall(endpoint, body) {
   const res = await fetch(endpoint, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
-  if (!res.ok) throw new Error('서버 오류');
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error || '서버 오류');
+  }
   return res.json();
+}
+
+// ===== 공통: 폼 데이터 추출 =====
+function getFormData(prefix, genderKey) {
+  return {
+    year: document.getElementById(`${prefix}Year`).value,
+    month: document.getElementById(`${prefix}Month`).value,
+    day: document.getElementById(`${prefix}Day`).value,
+    hour: parseInt(document.getElementById(`${prefix}Hour`).value),
+    gender: state.genders[genderKey]
+  };
 }
 
 // ===== 기본 사주 =====
 async function submitBasic() {
+  if (state.loading) return;
   const v = validateForm('basic');
   if (!v.valid) return showError('basicError', v.error);
   document.getElementById('basicForm').style.display = 'none';
   document.getElementById('basicFormHeader').style.display = 'none';
   showAnalyzing('basicResult');
+  setSubmitButtons(true);
   try {
-    const data = await apiCall('/api/saju/basic', {
-      year: document.getElementById('basicYear').value,
-      month: document.getElementById('basicMonth').value,
-      day: document.getElementById('basicDay').value,
-      hour: parseInt(document.getElementById('basicHour').value),
-      gender: state.genders.basic
-    });
+    const data = await apiCall('/api/saju/basic', getFormData('basic', 'basic'));
     renderBasicResult(data);
   } catch(e) {
-    document.getElementById('basicResult').innerHTML = `<div class="result-card"><p style="text-align:center;color:var(--accent)">분석 중 오류가 발생했습니다.</p><button class="retry-btn" onclick="resetForm('basic')">다시 시도</button></div>`;
+    document.getElementById('basicResult').innerHTML = `<div class="result-card"><p style="text-align:center;color:var(--accent)">${esc(e.message)}</p><button class="retry-btn" onclick="resetForm('basic')">다시 시도</button></div>`;
+  } finally {
+    setSubmitButtons(false);
   }
 }
 
@@ -109,19 +131,19 @@ function renderBasicResult(data) {
   // 일간 히어로
   h += `<div class="ilgan-hero">
     <div class="animal-emoji">${saju.animalEmoji}</div>
-    <div class="ilgan-name">${saju.personality.title} · ${saju.ilgan}일간</div>
+    <div class="ilgan-name">${esc(saju.personality.title)} · ${esc(saju.ilgan)}일간</div>
     <div class="ilgan-sub">${esc(saju.animal)}띠 · ${esc(interp.summary || saju.personality.desc)}</div>
-    <div class="ilgan-trait">${saju.personality.trait}</div>
+    <div class="ilgan-trait">${esc(saju.personality.trait)}</div>
   </div>`;
 
   // 사주팔자
   h += `<div class="result-card"><h3>사주팔자</h3><div class="saju-table">`;
   pillars.forEach(p => {
     h += `<div class="saju-col">
-      <div class="col-label">${p.name}</div>
-      <div class="col-top" style="color:${p.cheonganColor}">${p.cheonganHanja}</div>
-      <div class="col-bottom" style="color:${p.jijiColor}">${p.jijiHanja}</div>
-      <div class="col-korean">${p.cheongan}${p.jiji}</div>
+      <div class="col-label">${esc(p.name)}</div>
+      <div class="col-top" style="color:${p.cheonganColor}">${esc(p.cheonganHanja)}</div>
+      <div class="col-bottom" style="color:${p.jijiColor}">${esc(p.jijiHanja)}</div>
+      <div class="col-korean">${esc(p.cheongan)}${esc(p.jiji)}</div>
     </div>`;
   });
   h += `</div>`;
@@ -179,22 +201,20 @@ function renderBasicResult(data) {
 
 // ===== 오늘의 운세 =====
 async function submitToday() {
+  if (state.loading) return;
   const v = validateForm('today');
   if (!v.valid) return showError('todayError', v.error);
   document.getElementById('todayForm').style.display = 'none';
   document.getElementById('todayFormHeader').style.display = 'none';
   showAnalyzing('todayResult');
+  setSubmitButtons(true);
   try {
-    const data = await apiCall('/api/saju/today', {
-      year: document.getElementById('todayYear').value,
-      month: document.getElementById('todayMonth').value,
-      day: document.getElementById('todayDay').value,
-      hour: parseInt(document.getElementById('todayHour').value),
-      gender: state.genders.today
-    });
+    const data = await apiCall('/api/saju/today', getFormData('today', 'today'));
     renderTodayResult(data);
   } catch(e) {
-    document.getElementById('todayResult').innerHTML = `<div class="result-card"><p style="text-align:center;color:var(--accent)">오류 발생</p><button class="retry-btn" onclick="resetForm('today')">다시 시도</button></div>`;
+    document.getElementById('todayResult').innerHTML = `<div class="result-card"><p style="text-align:center;color:var(--accent)">${esc(e.message)}</p><button class="retry-btn" onclick="resetForm('today')">다시 시도</button></div>`;
+  } finally {
+    setSubmitButtons(false);
   }
 }
 
@@ -203,8 +223,8 @@ function renderTodayResult(data) {
   const cls = interp.score >= 80 ? 'high' : interp.score >= 50 ? 'mid' : 'low';
   let h = '';
   h += `<div class="today-hero">
-    <div class="today-date">${today.date}</div>
-    <div class="today-ilgin">오늘의 일진: ${today.dayPillar.cheongan}${today.dayPillar.jiji}</div>
+    <div class="today-date">${esc(today.date)}</div>
+    <div class="today-ilgin">오늘의 일진: ${esc(today.dayPillar.cheongan)}${esc(today.dayPillar.jiji)}</div>
     <div class="today-score-num ${cls}">${interp.score}점</div>
     <div class="today-summary">${esc(interp.summary)}</div>
   </div>`;
@@ -231,6 +251,7 @@ function renderTodayResult(data) {
 
 // ===== 궁합 =====
 async function submitCompatibility() {
+  if (state.loading) return;
   const v1 = validateForm('compat1');
   if (!v1.valid) return showError('compatError', '첫 번째 사람: ' + v1.error);
   const v2 = validateForm('compat2');
@@ -238,14 +259,17 @@ async function submitCompatibility() {
   document.getElementById('compatForm').style.display = 'none';
   document.getElementById('compatFormHeader').style.display = 'none';
   showAnalyzing('compatResult');
+  setSubmitButtons(true);
   try {
     const data = await apiCall('/api/saju/compatibility', {
-      person1: { year: document.getElementById('compat1Year').value, month: document.getElementById('compat1Month').value, day: document.getElementById('compat1Day').value, hour: parseInt(document.getElementById('compat1Hour').value), gender: state.genders.compat1 },
-      person2: { year: document.getElementById('compat2Year').value, month: document.getElementById('compat2Month').value, day: document.getElementById('compat2Day').value, hour: parseInt(document.getElementById('compat2Hour').value), gender: state.genders.compat2 }
+      person1: getFormData('compat1', 'compat1'),
+      person2: getFormData('compat2', 'compat2')
     });
     renderCompatResult(data);
   } catch(e) {
-    document.getElementById('compatResult').innerHTML = `<div class="result-card"><p style="text-align:center;color:var(--accent)">오류 발생</p><button class="retry-btn" onclick="resetForm('compatibility')">다시 시도</button></div>`;
+    document.getElementById('compatResult').innerHTML = `<div class="result-card"><p style="text-align:center;color:var(--accent)">${esc(e.message)}</p><button class="retry-btn" onclick="resetForm('compatibility')">다시 시도</button></div>`;
+  } finally {
+    setSubmitButtons(false);
   }
 }
 
@@ -262,12 +286,12 @@ function renderCompatResult(data) {
 
   // 사주 비교
   h += `<div class="result-card"><h3>사주 비교</h3><div class="saju-compare">
-    <div class="saju-compare-side"><div class="side-label">${saju1.personality.title}</div><div class="saju-mini-pillars">
-      ${[saju1.yearPillar,saju1.monthPillar,saju1.dayPillar].map(p=>`<div class="saju-mini-col"><div class="mc-top" style="color:${p.cheonganColor}">${p.cheonganHanja}</div><div class="mc-bottom" style="color:${p.jijiColor}">${p.jijiHanja}</div></div>`).join('')}
+    <div class="saju-compare-side"><div class="side-label">${esc(saju1.personality.title)}</div><div class="saju-mini-pillars">
+      ${[saju1.yearPillar,saju1.monthPillar,saju1.dayPillar].map(p=>`<div class="saju-mini-col"><div class="mc-top" style="color:${p.cheonganColor}">${esc(p.cheonganHanja)}</div><div class="mc-bottom" style="color:${p.jijiColor}">${esc(p.jijiHanja)}</div></div>`).join('')}
     </div></div>
     <div style="display:flex;align-items:center;font-size:1.2rem;color:var(--accent)">♥</div>
-    <div class="saju-compare-side"><div class="side-label">${saju2.personality.title}</div><div class="saju-mini-pillars">
-      ${[saju2.yearPillar,saju2.monthPillar,saju2.dayPillar].map(p=>`<div class="saju-mini-col"><div class="mc-top" style="color:${p.cheonganColor}">${p.cheonganHanja}</div><div class="mc-bottom" style="color:${p.jijiColor}">${p.jijiHanja}</div></div>`).join('')}
+    <div class="saju-compare-side"><div class="side-label">${esc(saju2.personality.title)}</div><div class="saju-mini-pillars">
+      ${[saju2.yearPillar,saju2.monthPillar,saju2.dayPillar].map(p=>`<div class="saju-mini-col"><div class="mc-top" style="color:${p.cheonganColor}">${esc(p.cheonganHanja)}</div><div class="mc-bottom" style="color:${p.jijiColor}">${esc(p.jijiHanja)}</div></div>`).join('')}
     </div></div>
   </div></div>`;
 
@@ -275,7 +299,7 @@ function renderCompatResult(data) {
   if (interp.scores) {
     h += `<div class="result-card"><h3>세부 궁합 점수</h3>`;
     [{n:'연애 궁합',k:'love'},{n:'소통 궁합',k:'communication'},{n:'가치관 궁합',k:'values'},{n:'미래 궁합',k:'future'}].forEach(item => {
-      const val = interp.scores[item.k] || score;
+      const val = parseInt(interp.scores[item.k]) || score;
       h += `<div class="compat-bar-item"><div class="compat-bar-header"><span class="name">${item.n}</span><span class="value">${val}점</span></div><div class="compat-bar-track"><div class="compat-bar-fill" style="width:${val}%"></div></div></div>`;
     });
     h += `</div>`;
@@ -297,22 +321,20 @@ function renderCompatResult(data) {
 
 // ===== 신년운세 =====
 async function submitNewYear() {
+  if (state.loading) return;
   const v = validateForm('newyear');
   if (!v.valid) return showError('newyearError', v.error);
   document.getElementById('newyearForm').style.display = 'none';
   document.getElementById('newyearFormHeader').style.display = 'none';
   showAnalyzing('newyearResult');
+  setSubmitButtons(true);
   try {
-    const data = await apiCall('/api/saju/newyear', {
-      year: document.getElementById('newyearYear').value,
-      month: document.getElementById('newyearMonth').value,
-      day: document.getElementById('newyearDay').value,
-      hour: parseInt(document.getElementById('newyearHour').value),
-      gender: state.genders.newyear
-    });
+    const data = await apiCall('/api/saju/newyear', getFormData('newyear', 'newyear'));
     renderNewYearResult(data);
   } catch(e) {
-    document.getElementById('newyearResult').innerHTML = `<div class="result-card"><p style="text-align:center;color:var(--accent)">오류 발생</p><button class="retry-btn" onclick="resetForm('newyear')">다시 시도</button></div>`;
+    document.getElementById('newyearResult').innerHTML = `<div class="result-card"><p style="text-align:center;color:var(--accent)">${esc(e.message)}</p><button class="retry-btn" onclick="resetForm('newyear')">다시 시도</button></div>`;
+  } finally {
+    setSubmitButtons(false);
   }
 }
 
@@ -326,7 +348,7 @@ function renderNewYearResult(data) {
   h += `<div class="newyear-hero">
     <div class="ny-emoji">🐴</div>
     <div class="ny-year">2026 병오년</div>
-    <div class="ny-sub">${saju.personality.title} · ${saju.ilgan}일간의 신년운세</div>
+    <div class="ny-sub">${esc(saju.personality.title)} · ${esc(saju.ilgan)}일간의 신년운세</div>
     <div class="ny-theme">${esc(interp.year_theme)}</div>
   </div>`;
 

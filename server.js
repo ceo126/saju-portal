@@ -17,27 +17,36 @@ const interpreter = new SajuInterpreter(process.env.GEMINI_API_KEY);
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
+// 공통: 생년월일시 파싱 + 검증
+function parseBirthInput(data) {
+  if (!data || typeof data !== 'object') return { error: '입력 데이터가 올바르지 않습니다' };
+  const year = parseInt(data.year);
+  const month = parseInt(data.month);
+  const day = parseInt(data.day);
+  const gender = data.gender === 'female' ? 'female' : 'male';
+
+  if (isNaN(year) || isNaN(month) || isNaN(day)) return { error: '생년월일을 입력해주세요' };
+  if (year < 1920 || year > 2025) return { error: '1920~2025년 사이로 입력해주세요' };
+  if (month < 1 || month > 12) return { error: '올바른 월을 입력해주세요' };
+  if (day < 1 || day > 31) return { error: '올바른 일자를 입력해주세요' };
+
+  const hour = (data.hour !== undefined && data.hour !== '' && data.hour !== null && parseInt(data.hour) >= 0)
+    ? parseInt(data.hour)
+    : -1;
+
+  return { year, month, day, hour, gender };
+}
+
 // 기본 사주 풀이
 app.post('/api/saju/basic', async (req, res) => {
   try {
-    const { year, month, day, hour, gender } = req.body;
-    if (!year || !month || !day) {
-      return res.status(400).json({ error: '생년월일을 입력해주세요' });
-    }
+    const input = parseBirthInput(req.body);
+    if (input.error) return res.status(400).json({ error: input.error });
 
-    const sajuResult = sajuEngine.calculate(
-      parseInt(year), parseInt(month), parseInt(day),
-      hour !== undefined && hour !== '' && hour !== -1 ? parseInt(hour) : -1,
-      gender || 'male'
-    );
-
+    const sajuResult = sajuEngine.calculate(input.year, input.month, input.day, input.hour, input.gender);
     const interpretation = await interpreter.interpretBasic(sajuResult);
 
-    res.json({
-      success: true,
-      saju: sajuResult,
-      interpretation
-    });
+    res.json({ success: true, saju: sajuResult, interpretation });
   } catch (e) {
     console.error('기본 사주 오류:', e);
     res.status(500).json({ error: '사주 분석 중 오류가 발생했습니다' });
@@ -47,29 +56,19 @@ app.post('/api/saju/basic', async (req, res) => {
 // 사주 궁합
 app.post('/api/saju/compatibility', async (req, res) => {
   try {
-    const { person1, person2 } = req.body;
+    const { person1, person2 } = req.body || {};
+    const input1 = parseBirthInput(person1);
+    if (input1.error) return res.status(400).json({ error: '첫 번째 사람: ' + input1.error });
+    const input2 = parseBirthInput(person2);
+    if (input2.error) return res.status(400).json({ error: '두 번째 사람: ' + input2.error });
 
-    const saju1 = sajuEngine.calculate(
-      parseInt(person1.year), parseInt(person1.month), parseInt(person1.day),
-      person1.hour !== undefined && person1.hour !== '' && person1.hour !== -1 ? parseInt(person1.hour) : -1,
-      person1.gender || 'male'
-    );
-
-    const saju2 = sajuEngine.calculate(
-      parseInt(person2.year), parseInt(person2.month), parseInt(person2.day),
-      person2.hour !== undefined && person2.hour !== '' && person2.hour !== -1 ? parseInt(person2.hour) : -1,
-      person2.gender || 'female'
-    );
+    const saju1 = sajuEngine.calculate(input1.year, input1.month, input1.day, input1.hour, input1.gender);
+    const saju2 = sajuEngine.calculate(input2.year, input2.month, input2.day, input2.hour, input2.gender);
 
     const compatResult = sajuEngine.calculateCompatibility(saju1, saju2);
     const interpretation = await interpreter.interpretCompatibility(compatResult);
 
-    res.json({
-      success: true,
-      saju1,
-      saju2,
-      compatibility: { ...compatResult, interpretation }
-    });
+    res.json({ success: true, saju1, saju2, compatibility: { ...compatResult, interpretation } });
   } catch (e) {
     console.error('궁합 오류:', e);
     res.status(500).json({ error: '궁합 분석 중 오류가 발생했습니다' });
@@ -79,23 +78,14 @@ app.post('/api/saju/compatibility', async (req, res) => {
 // 오늘의 운세
 app.post('/api/saju/today', async (req, res) => {
   try {
-    const { year, month, day, hour, gender } = req.body;
+    const input = parseBirthInput(req.body);
+    if (input.error) return res.status(400).json({ error: input.error });
 
-    const sajuResult = sajuEngine.calculate(
-      parseInt(year), parseInt(month), parseInt(day),
-      hour !== undefined && hour !== '' && hour !== -1 ? parseInt(hour) : -1,
-      gender || 'male'
-    );
-
+    const sajuResult = sajuEngine.calculate(input.year, input.month, input.day, input.hour, input.gender);
     const todayInfo = sajuEngine.getTodayInfo();
     const interpretation = await interpreter.interpretToday(sajuResult, todayInfo);
 
-    res.json({
-      success: true,
-      saju: sajuResult,
-      today: todayInfo,
-      interpretation
-    });
+    res.json({ success: true, saju: sajuResult, today: todayInfo, interpretation });
   } catch (e) {
     console.error('오늘의 운세 오류:', e);
     res.status(500).json({ error: '오늘의 운세 분석 중 오류가 발생했습니다' });
@@ -105,21 +95,13 @@ app.post('/api/saju/today', async (req, res) => {
 // 2026 신년운세
 app.post('/api/saju/newyear', async (req, res) => {
   try {
-    const { year, month, day, hour, gender } = req.body;
+    const input = parseBirthInput(req.body);
+    if (input.error) return res.status(400).json({ error: input.error });
 
-    const sajuResult = sajuEngine.calculate(
-      parseInt(year), parseInt(month), parseInt(day),
-      hour !== undefined && hour !== '' && hour !== -1 ? parseInt(hour) : -1,
-      gender || 'male'
-    );
-
+    const sajuResult = sajuEngine.calculate(input.year, input.month, input.day, input.hour, input.gender);
     const interpretation = await interpreter.interpretNewYear(sajuResult);
 
-    res.json({
-      success: true,
-      saju: sajuResult,
-      interpretation
-    });
+    res.json({ success: true, saju: sajuResult, interpretation });
   } catch (e) {
     console.error('신년운세 오류:', e);
     res.status(500).json({ error: '신년운세 분석 중 오류가 발생했습니다' });
