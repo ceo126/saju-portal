@@ -324,7 +324,7 @@ body {
   padding: 16px 0;
   border-bottom: 1px solid var(--border);
 }
-.review-card:last-child { border-bottom: none; }
+.review-card:last-of-type { border-bottom: none; }
 .review-user {
   display: flex; align-items: center; gap: 10px;
   margin-bottom: 8px;

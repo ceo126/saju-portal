@@ -7,6 +7,36 @@ const SajuInterpreter = require('./lib/saju-interpreter');
 const app = express();
 const PORT = process.env.PORT || 8210;
 
+// Rate Limiting (IP당 분당 최대 요청 수)
+const RATE_LIMIT = 10; // 분당 10회
+const RATE_WINDOW = 60 * 1000; // 1분
+const requestCounts = new Map();
+
+function rateLimit(req, res, next) {
+  const ip = req.ip || req.connection.remoteAddress;
+  const now = Date.now();
+  const entry = requestCounts.get(ip);
+
+  if (!entry || now - entry.start > RATE_WINDOW) {
+    requestCounts.set(ip, { start: now, count: 1 });
+    return next();
+  }
+
+  entry.count++;
+  if (entry.count > RATE_LIMIT) {
+    return res.status(429).json({ error: '요청이 너무 많습니다. 잠시 후 다시 시도해주세요.' });
+  }
+  next();
+}
+
+// 오래된 rate limit 엔트리 정리 (5분마다)
+setInterval(() => {
+  const now = Date.now();
+  for (const [ip, entry] of requestCounts) {
+    if (now - entry.start > RATE_WINDOW * 2) requestCounts.delete(ip);
+  }
+}, 5 * 60 * 1000).unref();
+
 if (!process.env.GEMINI_API_KEY) {
   console.error('⚠️  GEMINI_API_KEY가 .env 파일에 설정되지 않았습니다.');
   console.error('   .env 파일에 GEMINI_API_KEY=your_key 를 추가해주세요.');
@@ -31,15 +61,16 @@ function parseBirthInput(data) {
   const maxDay = new Date(year, month, 0).getDate();
   if (day < 1 || day > maxDay) return { error: `${month}월은 ${maxDay}일까지 입력 가능합니다` };
 
-  const hour = (data.hour !== undefined && data.hour !== '' && data.hour !== null && parseInt(data.hour) >= 0)
-    ? parseInt(data.hour)
+  const parsedHour = parseInt(data.hour);
+  const hour = (data.hour !== undefined && data.hour !== '' && data.hour !== null && parsedHour >= 0 && parsedHour <= 23)
+    ? parsedHour
     : -1;
 
   return { year, month, day, hour, gender };
 }
 
 // 기본 사주 풀이
-app.post('/api/saju/basic', async (req, res) => {
+app.post('/api/saju/basic', rateLimit, async (req, res) => {
   try {
     const input = parseBirthInput(req.body);
     if (input.error) return res.status(400).json({ error: input.error });
@@ -55,7 +86,7 @@ app.post('/api/saju/basic', async (req, res) => {
 });
 
 // 사주 궁합
-app.post('/api/saju/compatibility', async (req, res) => {
+app.post('/api/saju/compatibility', rateLimit, async (req, res) => {
   try {
     const { person1, person2 } = req.body || {};
     const input1 = parseBirthInput(person1);
@@ -77,7 +108,7 @@ app.post('/api/saju/compatibility', async (req, res) => {
 });
 
 // 오늘의 운세
-app.post('/api/saju/today', async (req, res) => {
+app.post('/api/saju/today', rateLimit, async (req, res) => {
   try {
     const input = parseBirthInput(req.body);
     if (input.error) return res.status(400).json({ error: input.error });
@@ -94,7 +125,7 @@ app.post('/api/saju/today', async (req, res) => {
 });
 
 // 2026 신년운세 (상세 5섹션)
-app.post('/api/saju/newyear', async (req, res) => {
+app.post('/api/saju/newyear', rateLimit, async (req, res) => {
   try {
     const input = parseBirthInput(req.body);
     if (input.error) return res.status(400).json({ error: input.error });
