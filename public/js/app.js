@@ -52,7 +52,7 @@ function validateForm(prefix) {
   const m = parseInt(document.getElementById(`${prefix}Month`).value);
   const d = parseInt(document.getElementById(`${prefix}Day`).value);
   if (isNaN(y) || isNaN(m) || isNaN(d)) return { valid: false, error: '생년월일을 모두 입력해주세요' };
-  if (y < 1920 || y > 2025) return { valid: false, error: '1920~2025년 사이로 입력해주세요' };
+  if (y < 1920 || y > 2030) return { valid: false, error: '1920~2030년 사이로 입력해주세요' };
   if (m < 1 || m > 12) return { valid: false, error: '올바른 월을 입력해주세요' };
   if (d < 1 || d > 31) return { valid: false, error: '올바른 일자를 입력해주세요' };
   return { valid: true };

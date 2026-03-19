@@ -26,9 +26,10 @@ function parseBirthInput(data) {
   const gender = data.gender === 'female' ? 'female' : 'male';
 
   if (isNaN(year) || isNaN(month) || isNaN(day)) return { error: '생년월일을 입력해주세요' };
-  if (year < 1920 || year > 2025) return { error: '1920~2025년 사이로 입력해주세요' };
+  if (year < 1920 || year > 2030) return { error: '1920~2030년 사이로 입력해주세요' };
   if (month < 1 || month > 12) return { error: '올바른 월을 입력해주세요' };
-  if (day < 1 || day > 31) return { error: '올바른 일자를 입력해주세요' };
+  const maxDay = new Date(year, month, 0).getDate();
+  if (day < 1 || day > maxDay) return { error: `${month}월은 ${maxDay}일까지 입력 가능합니다` };
 
   const hour = (data.hour !== undefined && data.hour !== '' && data.hour !== null && parseInt(data.hour) >= 0)
     ? parseInt(data.hour)
@@ -107,6 +108,13 @@ app.post('/api/saju/newyear', async (req, res) => {
     console.error('신년운세 오류:', e);
     res.status(500).json({ error: '신년운세 분석 중 오류가 발생했습니다' });
   }
+});
+
+process.on('uncaughtException', (err) => {
+  console.error('미처리 예외:', err);
+});
+process.on('unhandledRejection', (err) => {
+  console.error('미처리 Promise 거부:', err);
 });
 
 app.listen(PORT, () => {
