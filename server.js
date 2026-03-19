@@ -14,7 +14,7 @@ if (!process.env.GEMINI_API_KEY) {
 }
 const interpreter = new SajuInterpreter(process.env.GEMINI_API_KEY);
 
-app.use(express.json());
+app.use(express.json({ limit: '100kb' }));
 app.use(express.static(path.join(__dirname, 'public')));
 
 // 공통: 생년월일시 파싱 + 검증
@@ -112,6 +112,7 @@ app.post('/api/saju/newyear', async (req, res) => {
 
 process.on('uncaughtException', (err) => {
   console.error('미처리 예외:', err);
+  process.exit(1);
 });
 process.on('unhandledRejection', (err) => {
   console.error('미처리 Promise 거부:', err);

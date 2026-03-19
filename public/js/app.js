@@ -54,7 +54,8 @@ function validateForm(prefix) {
   if (isNaN(y) || isNaN(m) || isNaN(d)) return { valid: false, error: '생년월일을 모두 입력해주세요' };
   if (y < 1920 || y > 2030) return { valid: false, error: '1920~2030년 사이로 입력해주세요' };
   if (m < 1 || m > 12) return { valid: false, error: '올바른 월을 입력해주세요' };
-  if (d < 1 || d > 31) return { valid: false, error: '올바른 일자를 입력해주세요' };
+  const maxDay = new Date(y, m, 0).getDate();
+  if (d < 1 || d > maxDay) return { valid: false, error: `${m}월은 ${maxDay}일까지 입력 가능합니다` };
   return { valid: true };
 }
 
