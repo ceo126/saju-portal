@@ -28,6 +28,7 @@
     <button class="header-back" id="backBtn" onclick="goHome()">&#8592;</button>
     <div class="header-top">
       <div class="header-logo" id="headerLogo">사주포털</div>
+      <button class="header-glossary" onclick="openGlossary()" aria-label="사주 용어 사전">📖</button>
     </div>
     <nav class="tab-nav" id="tabNav" role="tablist">
       <button class="tab-item active" data-page="home" onclick="openPage('home')" role="tab" aria-selected="true">홈</button>
@@ -474,6 +475,19 @@
       <button class="submit-btn" onclick="submitNewYear()" aria-label="2026 신년운세 분석 시작">2026 신년운세 보기</button>
     </div>
     <div id="newyearResult" role="region" aria-live="polite"></div>
+  </div>
+
+  <div class="glossary-modal" id="glossaryModal">
+    <div class="glossary-content">
+      <div class="glossary-header">
+        <h3>사주 용어 사전</h3>
+        <button class="glossary-close" onclick="closeGlossary()">&times;</button>
+      </div>
+      <div class="glossary-search">
+        <input type="text" id="glossarySearch" placeholder="용어 검색..." oninput="filterGlossary(this.value)">
+      </div>
+      <div class="glossary-list" id="glossaryList"></div>
+    </div>
   </div>
 
   <div class="toast" id="toast"></div>

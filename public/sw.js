@@ -1,10 +1,13 @@
-const CACHE_NAME = 'saju-v1';
+const CACHE_NAME = 'saju-v2';
 
 const STATIC_ASSETS = [
   '/',
   '/index.html',
   '/css/style.css',
-  '/js/main.js'
+  '/js/app.js',
+  '/manifest.json',
+  '/icons/icon-192.svg',
+  '/icons/icon-512.svg'
 ];
 
 // Install: cache static assets
@@ -31,8 +34,17 @@ self.addEventListener('activate', (event) => {
   self.clients.claim();
 });
 
-// Fetch: cache first, fallback to network
+// Fetch: strategy per resource type
 self.addEventListener('fetch', (event) => {
+  const url = new URL(event.request.url);
+
+  // API calls: network only (don't cache dynamic data)
+  if (url.pathname.startsWith('/api/')) {
+    event.respondWith(fetch(event.request));
+    return;
+  }
+
+  // Static assets: cache first, network fallback
   event.respondWith(
     caches.match(event.request).then((cachedResponse) => {
       if (cachedResponse) {

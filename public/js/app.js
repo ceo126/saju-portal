@@ -5,6 +5,91 @@ const state = {
   loading: false
 };
 
+// ===== Observer 메모리 누수 방지 =====
+const activeObservers = [];
+
+function cleanupObservers() {
+  activeObservers.forEach(obs => obs.disconnect());
+  activeObservers.length = 0;
+}
+
+// ===== 렌더링 에러 경계 =====
+function safeRender(containerId, renderFn) {
+  try {
+    renderFn();
+  } catch (e) {
+    console.error('렌더링 오류:', e);
+    document.getElementById(containerId).innerHTML = `<div class="result-card"><p style="text-align:center;color:var(--accent)">결과 표시 중 오류가 발생했습니다</p><button class="retry-btn" onclick="resetForm('${containerId.replace('Result','')}')" >다시 시도</button></div>`;
+  }
+}
+
+const OHENG_COLORS = {
+  '목': '#22c55e',
+  '화': '#ef4444',
+  '토': '#d4a017',
+  '금': '#94a3b8',
+  '수': '#3b82f6'
+};
+
+// ===== 사주 용어 사전 =====
+const SAJU_GLOSSARY = [
+  { term: '천간(天干)', desc: '하늘의 기운을 나타내는 10개의 글자: 갑을병정무기경신임계' },
+  { term: '지지(地支)', desc: '땅의 기운을 나타내는 12개의 글자: 자축인묘진사오미신유술해' },
+  { term: '사주팔자(四柱八字)', desc: '년·월·일·시 4개의 기둥(주)에 천간·지지 8글자로 이루어진 운명의 틀' },
+  { term: '일간(日干)', desc: '일주의 천간으로, 사주에서 나 자신을 대표하는 핵심 글자' },
+  { term: '오행(五行)', desc: '목(나무)·화(불)·토(흙)·금(쇠)·수(물) 다섯 가지 기운' },
+  { term: '상생(相生)', desc: '오행이 서로 살려주는 관계: 목→화→토→금→수→목' },
+  { term: '상극(相剋)', desc: '오행이 서로 억누르는 관계: 목→토→수→화→금→목' },
+  { term: '음양(陰陽)', desc: '우주 만물의 두 가지 상반된 기운. 천간과 지지 각각에 음양이 있음' },
+  { term: '십성(十星)', desc: '일간을 기준으로 다른 글자와의 관계를 나타내는 10가지 별: 비견·겁재·식신·상관·편재·정재·편관·정관·편인·정인' },
+  { term: '비견(比肩)', desc: '나와 같은 오행, 같은 음양. 독립심과 경쟁심을 나타냄' },
+  { term: '겁재(劫財)', desc: '나와 같은 오행, 다른 음양. 사교성과 승부욕을 나타냄' },
+  { term: '식신(食神)', desc: '내가 생하는 오행, 같은 음양. 표현력과 재능을 나타냄' },
+  { term: '상관(傷官)', desc: '내가 생하는 오행, 다른 음양. 창의력과 자유로움을 나타냄' },
+  { term: '편재(偏財)', desc: '내가 극하는 오행, 같은 음양. 큰 재물과 투자를 나타냄' },
+  { term: '정재(正財)', desc: '내가 극하는 오행, 다른 음양. 안정적 수입과 저축을 나타냄' },
+  { term: '편관(偏官)', desc: '나를 극하는 오행, 같은 음양. 카리스마와 도전정신을 나타냄' },
+  { term: '정관(正官)', desc: '나를 극하는 오행, 다른 음양. 명예와 책임감을 나타냄' },
+  { term: '편인(偏印)', desc: '나를 생하는 오행, 같은 음양. 특별한 재능과 학문을 나타냄' },
+  { term: '정인(正印)', desc: '나를 생하는 오행, 다른 음양. 학문과 지혜를 나타냄' },
+  { term: '신강(身強)', desc: '일간의 힘이 강한 상태. 재성과 관성이 좋은 작용을 함' },
+  { term: '신약(身弱)', desc: '일간의 힘이 약한 상태. 인성과 비겁이 좋은 작용을 함' },
+  { term: '대운(大運)', desc: '10년 단위로 변화하는 큰 운의 흐름' },
+  { term: '세운(歲運)', desc: '매년 변화하는 운의 흐름. 해당 년도의 간지로 판단' },
+  { term: '십이운성(十二運星)', desc: '장생~양까지 12단계로 나타내는 기운의 성쇠 주기' },
+  { term: '역마살(驛馬殺)', desc: '이동과 변화가 많은 신살. 해외 활동이나 이사에 유리' },
+  { term: '도화살(桃花殺)', desc: '매력과 이성 인연을 나타내는 신살. 연예·예술에 유리' },
+  { term: '화개살(華蓋殺)', desc: '학문과 종교적 감수성을 나타내는 신살. 연구·예술에 유리' },
+  { term: '충(沖)', desc: '지지끼리 정반대 위치에서 부딪히는 관계. 변화와 갈등을 의미' },
+  { term: '합(合)', desc: '천간이나 지지가 결합하는 관계. 인연과 결합을 의미' },
+  { term: '형(刑)', desc: '지지끼리 해를 끼치는 관계. 갈등과 시련을 의미' }
+];
+
+function openGlossary() {
+  const modal = document.getElementById('glossaryModal');
+  renderGlossaryList(SAJU_GLOSSARY);
+  modal.classList.add('show');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeGlossary() {
+  document.getElementById('glossaryModal').classList.remove('show');
+  document.body.style.overflow = '';
+  document.getElementById('glossarySearch').value = '';
+}
+
+function filterGlossary(query) {
+  const q = query.trim().toLowerCase();
+  const filtered = q ? SAJU_GLOSSARY.filter(g => g.term.toLowerCase().includes(q) || g.desc.toLowerCase().includes(q)) : SAJU_GLOSSARY;
+  renderGlossaryList(filtered);
+}
+
+function renderGlossaryList(items) {
+  document.getElementById('glossaryList').innerHTML = items.map(g =>
+    `<div class="glossary-item"><div class="gi-term">${esc(g.term)}</div><div class="gi-desc">${esc(g.desc)}</div></div>`
+  ).join('');
+}
+
 // ===== XSS 방지: HTML 이스케이프 =====
 function esc(str) {
   if (str == null) return '';
@@ -141,6 +226,7 @@ window.addEventListener('load', () => {
   }, 800);
   restoreFormData();
   setupRealtimeValidation();
+  setupAutoFocus();
   // Service Worker 등록
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('/sw.js').catch(() => {});
@@ -406,6 +492,8 @@ function animateResultCards(containerId) {
     });
   }, { threshold: 0.1 });
 
+  activeObservers.push(observer);
+
   cards.forEach((card, i) => {
     card.classList.add('fade-in-up');
     card.style.transitionDelay = `${i * 100}ms`;
@@ -414,6 +502,7 @@ function animateResultCards(containerId) {
 }
 
 function renderBasicResult(data) {
+  cleanupObservers();
   const { saju, interpretation: interp } = data;
   const pillars = [saju.yearPillar, saju.monthPillar, saju.dayPillar];
   if (saju.hourPillar) pillars.push(saju.hourPillar);
@@ -567,9 +656,14 @@ function renderBasicResult(data) {
     <button class="print-btn" onclick="printResult()">프린트</button>
     <button class="retry-btn" onclick="resetForm('basic')">다시 분석하기</button>
   </div>`;
-  document.getElementById('basicResult').innerHTML = h;
-  document.getElementById('basicResult').scrollIntoView({ behavior: 'smooth', block: 'start' });
-  animateResultCards('basicResult');
+  try {
+    document.getElementById('basicResult').innerHTML = h;
+    document.getElementById('basicResult').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    animateResultCards('basicResult');
+  } catch (e) {
+    console.error('렌더링 오류:', e);
+    document.getElementById('basicResult').innerHTML = `<div class="result-card"><p style="text-align:center;color:var(--accent)">결과 표시 중 오류가 발생했습니다</p><button class="retry-btn" onclick="resetForm('basic')">다시 시도</button></div>`;
+  }
 }
 
 // ===== 오늘의 운세 =====
@@ -597,6 +691,7 @@ async function submitToday() {
 }
 
 function renderTodayResult(data) {
+  cleanupObservers();
   const { today, interpretation: interp } = data;
   const cls = interp.score >= 80 ? 'high' : interp.score >= 50 ? 'mid' : 'low';
   let h = '';
@@ -628,9 +723,14 @@ function renderTodayResult(data) {
     <button class="print-btn" onclick="printResult()">프린트</button>
     <button class="retry-btn" onclick="resetForm('today')">다시 보기</button>
   </div>`;
-  document.getElementById('todayResult').innerHTML = h;
-  document.getElementById('todayResult').scrollIntoView({ behavior: 'smooth', block: 'start' });
-  animateResultCards('todayResult');
+  try {
+    document.getElementById('todayResult').innerHTML = h;
+    document.getElementById('todayResult').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    animateResultCards('todayResult');
+  } catch (e) {
+    console.error('렌더링 오류:', e);
+    document.getElementById('todayResult').innerHTML = `<div class="result-card"><p style="text-align:center;color:var(--accent)">결과 표시 중 오류가 발생했습니다</p><button class="retry-btn" onclick="resetForm('today')">다시 시도</button></div>`;
+  }
 }
 
 // ===== 궁합 =====
@@ -662,6 +762,7 @@ async function submitCompatibility() {
 }
 
 function renderCompatResult(data) {
+  cleanupObservers();
   const { saju1, saju2, compatibility } = data;
   const interp = compatibility.interpretation;
   const score = compatibility.score;
@@ -719,9 +820,14 @@ function renderCompatResult(data) {
     <button class="print-btn" onclick="printResult()">프린트</button>
     <button class="retry-btn" onclick="resetForm('compatibility')">다시 분석하기</button>
   </div>`;
-  document.getElementById('compatResult').innerHTML = h;
-  document.getElementById('compatResult').scrollIntoView({ behavior: 'smooth', block: 'start' });
-  animateResultCards('compatResult');
+  try {
+    document.getElementById('compatResult').innerHTML = h;
+    document.getElementById('compatResult').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    animateResultCards('compatResult');
+  } catch (e) {
+    console.error('렌더링 오류:', e);
+    document.getElementById('compatResult').innerHTML = `<div class="result-card"><p style="text-align:center;color:var(--accent)">결과 표시 중 오류가 발생했습니다</p><button class="retry-btn" onclick="resetForm('compatibility')">다시 시도</button></div>`;
+  }
 }
 
 // ===== 신년운세 =====
@@ -776,6 +882,7 @@ function renderMonthlyChart(scores) {
 
 // ===== 신년운세 상세 렌더링 =====
 function renderNewYearResult(data) {
+  cleanupObservers();
   const { saju, seunAnalysis: sa, interpretation: interp } = data;
   if (!interp) {
     document.getElementById('newyearResult').innerHTML = `<div class="result-card"><p style="text-align:center;color:var(--accent)">AI 분석 실패</p><button class="retry-btn" onclick="resetForm('newyear')">다시 시도</button></div>`;
@@ -854,6 +961,19 @@ function renderNewYearResult(data) {
         h += `<span class="seun-badge hap">${esc(hp.pillar)} ${esc(hp.cheongan)}-${esc(hp.seunCheongan)} 천간합</span>`;
       });
     }
+    h += `</div></div>`;
+  }
+
+  // 2026년 월운 간지
+  if (sa && sa.monthlyGanji) {
+    h += `<div class="result-card"><h3>2026년 월별 간지</h3><div class="monthly-ganji-grid">`;
+    sa.monthlyGanji.forEach(mg => {
+      h += `<div class="mg-item">
+        <div class="mg-month">${mg.month}월</div>
+        <div class="mg-hanja"><span style="color:${OHENG_COLORS[mg.oheng] || 'inherit'}">${esc(mg.cheonganHanja)}</span><span style="color:${OHENG_COLORS[mg.jijiOheng] || 'inherit'}">${esc(mg.jijiHanja)}</span></div>
+        <div class="mg-korean">${esc(mg.ganji)}</div>
+      </div>`;
+    });
     h += `</div></div>`;
   }
 
@@ -1208,9 +1328,14 @@ function renderNewYearResult(data) {
     <button class="retry-btn" onclick="resetForm('newyear')">다시 분석하기</button>
   </div>`;
 
-  document.getElementById('newyearResult').innerHTML = h;
-  document.getElementById('newyearResult').scrollIntoView({ behavior: 'smooth', block: 'start' });
-  animateResultCards('newyearResult');
+  try {
+    document.getElementById('newyearResult').innerHTML = h;
+    document.getElementById('newyearResult').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    animateResultCards('newyearResult');
+  } catch (e) {
+    console.error('렌더링 오류:', e);
+    document.getElementById('newyearResult').innerHTML = `<div class="result-card"><p style="text-align:center;color:var(--accent)">결과 표시 중 오류가 발생했습니다</p><button class="retry-btn" onclick="resetForm('newyear')">다시 시도</button></div>`;
+  }
 }
 
 // ===== 리셋 =====
@@ -1290,4 +1415,122 @@ document.addEventListener('keydown', (e) => {
   btn.addEventListener('click', () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   });
+})();
+
+// ===== 스크롤 진행 표시기 =====
+(function() {
+  let indicator = document.createElement('div');
+  indicator.className = 'scroll-indicator';
+  document.body.prepend(indicator);
+
+  window.addEventListener('scroll', () => {
+    const scrollTop = window.scrollY;
+    const docHeight = document.documentElement.scrollHeight - window.innerHeight;
+    if (docHeight > 0) {
+      indicator.style.width = (scrollTop / docHeight * 100) + '%';
+    }
+  }, { passive: true });
+})();
+
+// ===== 자동 포커스 (연도→월→일) =====
+function setupAutoFocus() {
+  // When year input has 4 digits, auto-focus to month
+  document.querySelectorAll('input[type="number"]').forEach(input => {
+    if (input.id.includes('Year')) {
+      input.addEventListener('input', function() {
+        if (this.value.length === 4) {
+          // Find the next month select in the same form
+          const monthSelect = this.closest('.form-row').nextElementSibling?.querySelector('select')
+            || this.closest('.form-section').querySelector('select');
+          if (monthSelect) monthSelect.focus();
+        }
+      });
+    }
+  });
+
+  // When month is selected, auto-focus to day
+  document.querySelectorAll('select').forEach(select => {
+    if (select.id.includes('Month')) {
+      select.addEventListener('change', function() {
+        if (this.value) {
+          const dayInput = this.closest('.form-row')?.querySelector('input[id*="Day"]')
+            || this.closest('.form-section').querySelector('input[id*="Day"]');
+          if (dayInput) dayInput.focus();
+        }
+      });
+    }
+  });
+}
+
+// ===== 스와이프 탭 전환 =====
+(function() {
+  let touchStartX = 0;
+  let touchEndX = 0;
+  const pages = ['home', 'basic', 'compatibility', 'newyear', 'today'];
+
+  document.addEventListener('touchstart', e => {
+    touchStartX = e.changedTouches[0].screenX;
+  }, { passive: true });
+
+  document.addEventListener('touchend', e => {
+    touchEndX = e.changedTouches[0].screenX;
+    const diff = touchStartX - touchEndX;
+    if (Math.abs(diff) < 60) return; // minimum swipe distance
+
+    const currentIdx = pages.indexOf(state.currentPage);
+    if (currentIdx === -1) return;
+
+    if (diff > 0 && currentIdx < pages.length - 1) {
+      // Swipe left → next page
+      openPage(pages[currentIdx + 1]);
+    } else if (diff < 0 && currentIdx > 0) {
+      // Swipe right → previous page
+      openPage(pages[currentIdx - 1]);
+    }
+  }, { passive: true });
+})();
+
+// ===== 빠른 재분석 버튼 =====
+(function() {
+  const btn = document.createElement('button');
+  btn.className = 'quick-reanalyze-btn';
+  btn.innerHTML = '&#x21bb; 재분석';
+  btn.onclick = () => {
+    const page = state.currentPage;
+    resetForm(page === 'compatibility' ? 'compatibility' : page);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+  document.body.appendChild(btn);
+
+  window.addEventListener('scroll', () => {
+    const isResultPage = state.currentPage !== 'home';
+    const resultIds = { basic: 'basicResult', today: 'todayResult', compatibility: 'compatResult', newyear: 'newyearResult' };
+    const resultEl = document.getElementById(resultIds[state.currentPage]);
+    const hasResult = resultEl && resultEl.innerHTML.trim().length > 100;
+    btn.classList.toggle('show', isResultPage && hasResult && window.scrollY > 300);
+  }, { passive: true });
+})();
+
+// ===== 글자 크기 조절 =====
+let resultFontSize = 100; // percentage
+
+function adjustFontSize(delta) {
+  resultFontSize = Math.max(80, Math.min(130, resultFontSize + delta));
+  document.querySelectorAll('.result-card').forEach(card => {
+    card.style.fontSize = resultFontSize + '%';
+  });
+  showToast('글자 크기: ' + resultFontSize + '%');
+}
+
+// 글자 크기 조절 UI
+(function() {
+  const wrap = document.createElement('div');
+  wrap.className = 'font-size-controls';
+  wrap.innerHTML = '<button onclick="adjustFontSize(-10)" aria-label="글자 작게">A-</button><button onclick="adjustFontSize(10)" aria-label="글자 크게">A+</button>';
+  document.body.appendChild(wrap);
+
+  window.addEventListener('scroll', () => {
+    const isResultPage = state.currentPage !== 'home';
+    wrap.classList.toggle('show', isResultPage && window.scrollY > 200);
+  }, { passive: true });
 })();

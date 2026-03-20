@@ -119,6 +119,7 @@ app.use((req, res, next) => {
   res.setHeader('X-Frame-Options', 'DENY');
   res.setHeader('X-XSS-Protection', '1; mode=block');
   res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+  res.setHeader('Content-Security-Policy', "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; connect-src 'self'");
   // CORS 헤더
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
@@ -141,6 +142,14 @@ app.use((req, res, next) => {
 
 app.use(express.json({ limit: '100kb' }));
 app.use(express.static(path.join(__dirname, 'public'), { etag: true }));
+
+// 요청 본문 크기 추가 검증 (엔드포인트별)
+function validateBody(req, res, next) {
+  if (req.body && JSON.stringify(req.body).length > 2000) {
+    return errorResponse(res, 413, '요청 데이터가 너무 큽니다');
+  }
+  next();
+}
 
 // 공통: 생년월일시 파싱 + 검증
 function parseBirthInput(data) {
@@ -180,7 +189,7 @@ app.get('/api/health', (req, res) => {
 });
 
 // 기본 사주 풀이
-app.post('/api/saju/basic', rateLimit, async (req, res) => {
+app.post('/api/saju/basic', rateLimit, validateBody, async (req, res) => {
   try {
     const input = parseBirthInput(req.body);
     if (input.error) return res.status(400).json({ error: input.error });
@@ -202,7 +211,7 @@ app.post('/api/saju/basic', rateLimit, async (req, res) => {
 });
 
 // 사주 궁합
-app.post('/api/saju/compatibility', rateLimit, async (req, res) => {
+app.post('/api/saju/compatibility', rateLimit, validateBody, async (req, res) => {
   try {
     const { person1, person2 } = req.body || {};
     const input1 = parseBirthInput(person1);
@@ -230,7 +239,7 @@ app.post('/api/saju/compatibility', rateLimit, async (req, res) => {
 });
 
 // 오늘의 운세
-app.post('/api/saju/today', rateLimit, async (req, res) => {
+app.post('/api/saju/today', rateLimit, validateBody, async (req, res) => {
   try {
     const input = parseBirthInput(req.body);
     if (input.error) return res.status(400).json({ error: input.error });
@@ -255,7 +264,7 @@ app.post('/api/saju/today', rateLimit, async (req, res) => {
 });
 
 // 2026 신년운세 (상세 5섹션)
-app.post('/api/saju/newyear', rateLimit, async (req, res) => {
+app.post('/api/saju/newyear', rateLimit, validateBody, async (req, res) => {
   try {
     const input = parseBirthInput(req.body);
     if (input.error) return res.status(400).json({ error: input.error });
@@ -298,6 +307,8 @@ const server = app.listen(PORT, () => {
 function shutdown() {
   console.log('\n서버 종료 중...');
   server.close(() => {
+    responseCache.clear();
+    requestCounts.clear();
     console.log('서버 종료 완료');
     process.exit(0);
   });
