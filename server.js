@@ -38,6 +38,19 @@ setInterval(() => {
   }
 }, 10 * 60 * 1000).unref();
 
+// 방문자 카운터 (인메모리)
+let visitorCount = 152380;
+const visitedIPs = new Set();
+
+app.get('/api/visitors', (req, res) => {
+  const ip = req.ip || req.socket?.remoteAddress || 'unknown';
+  if (!visitedIPs.has(ip)) {
+    visitedIPs.add(ip);
+    visitorCount++;
+  }
+  res.json({ count: visitorCount });
+});
+
 // Rate Limiting (IP당 분당 최대 요청 수)
 const RATE_LIMIT = 10; // 분당 10회
 const RATE_WINDOW = 60 * 1000; // 1분

@@ -134,6 +134,10 @@ window.addEventListener('load', () => {
   setTimeout(() => {
     document.getElementById('loadingScreen').classList.add('hide');
     renderHistoryOnHome();
+    fetch('/api/visitors').then(r => r.json()).then(d => {
+      const el = document.querySelector('.best-count .number');
+      if (el) el.textContent = d.count.toLocaleString();
+    }).catch(() => {});
   }, 800);
   restoreFormData();
   // Service Worker 등록
@@ -208,13 +212,22 @@ function setSubmitButtons(disabled) {
   });
 }
 
-async function apiCall(endpoint, body) {
-  const res = await fetch(endpoint, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    throw new Error(err.error || '서버 오류');
+async function apiCall(endpoint, body, retries = 1) {
+  try {
+    const res = await fetch(endpoint, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error || '서버 오류');
+    }
+    return await res.json();
+  } catch(e) {
+    if (retries > 0) {
+      showToast('재시도 중...');
+      await new Promise(r => setTimeout(r, 1500));
+      return apiCall(endpoint, body, retries - 1);
+    }
+    throw e;
   }
-  return res.json();
 }
 
 // ===== 공통: 폼 데이터 추출 =====
@@ -250,6 +263,109 @@ async function submitBasic() {
   }
 }
 
+// ===== 오행 레이더 차트 (SVG) =====
+function renderOhengRadar(ohengAnalysis) {
+  const items = [
+    { k: '목', e: '🌳', c: '#22c55e' },
+    { k: '화', e: '🔥', c: '#ef4444' },
+    { k: '토', e: '⛰️', c: '#d4a017' },
+    { k: '금', e: '⚔️', c: '#94a3b8' },
+    { k: '수', e: '💧', c: '#3b82f6' }
+  ];
+  const cx = 140, cy = 140, maxR = 100;
+  const angleOffset = -Math.PI / 2; // top start
+
+  function polarToXY(angle, r) {
+    return { x: cx + r * Math.cos(angle), y: cy + r * Math.sin(angle) };
+  }
+
+  function pentagonPoints(r) {
+    return items.map((_, i) => {
+      const angle = angleOffset + (2 * Math.PI * i) / 5;
+      const p = polarToXY(angle, r);
+      return `${p.x},${p.y}`;
+    }).join(' ');
+  }
+
+  // Grid lines at 25%, 50%, 75%, 100%
+  let gridSvg = '';
+  [25, 50, 75, 100].forEach(pct => {
+    const r = maxR * pct / 100;
+    gridSvg += `<polygon points="${pentagonPoints(r)}" class="radar-grid" fill="none" stroke="#e0e0e0" stroke-width="0.8"/>`;
+  });
+
+  // Axis lines
+  let axisSvg = '';
+  items.forEach((_, i) => {
+    const angle = angleOffset + (2 * Math.PI * i) / 5;
+    const p = polarToXY(angle, maxR);
+    axisSvg += `<line x1="${cx}" y1="${cy}" x2="${p.x}" y2="${p.y}" stroke="#e0e0e0" stroke-width="0.5"/>`;
+  });
+
+  // Data polygon
+  const pcts = ohengAnalysis.percentages;
+  const total = items.reduce((s, o) => s + (pcts[o.k] || 0), 0);
+  const maxVal = Math.max(...items.map(o => pcts[o.k] || 0), 1);
+
+  const dataPoints = items.map((o, i) => {
+    const val = pcts[o.k] || 0;
+    const normalized = Math.max(val / maxVal * 100, 8); // min 8% for visibility
+    const r = maxR * normalized / 100;
+    const angle = angleOffset + (2 * Math.PI * i) / 5;
+    return polarToXY(angle, r);
+  });
+  const dataPolygon = dataPoints.map(p => `${p.x},${p.y}`).join(' ');
+
+  // Labels
+  let labelsSvg = '';
+  items.forEach((o, i) => {
+    const angle = angleOffset + (2 * Math.PI * i) / 5;
+    const p = polarToXY(angle, maxR + 28);
+    const val = pcts[o.k] || 0;
+    const anchor = Math.abs(p.x - cx) < 5 ? 'middle' : p.x > cx ? 'start' : 'end';
+    labelsSvg += `<text x="${p.x}" y="${p.y}" text-anchor="${anchor}" dominant-baseline="central" class="radar-label" fill="#555" font-size="11" font-weight="600">${o.e} ${o.k} ${val}%</text>`;
+  });
+
+  // Dots on data points
+  let dotsSvg = '';
+  dataPoints.forEach((p, i) => {
+    dotsSvg += `<circle cx="${p.x}" cy="${p.y}" r="3.5" fill="${items[i].c}" stroke="#fff" stroke-width="1.5"/>`;
+  });
+
+  return `<div class="oheng-radar-wrap">
+    <svg width="280" height="280" viewBox="0 0 280 280">
+      ${gridSvg}
+      ${axisSvg}
+      <polygon points="${dataPolygon}" fill="rgba(255,90,95,0.15)" stroke="var(--accent)" stroke-width="2"/>
+      ${dotsSvg}
+      ${labelsSvg}
+    </svg>
+  </div>`;
+}
+
+// ===== 결과 카드 순차 애니메이션 =====
+function animateResultCards(containerId) {
+  const container = document.getElementById(containerId);
+  if (!container) return;
+  const cards = container.querySelectorAll('.result-card');
+  if (!cards.length) return;
+
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        entry.target.classList.add('visible');
+        observer.unobserve(entry.target);
+      }
+    });
+  }, { threshold: 0.1 });
+
+  cards.forEach((card, i) => {
+    card.classList.add('fade-in-up');
+    card.style.transitionDelay = `${i * 100}ms`;
+    observer.observe(card);
+  });
+}
+
 function renderBasicResult(data) {
   const { saju, interpretation: interp } = data;
   const pillars = [saju.yearPillar, saju.monthPillar, saju.dayPillar];
@@ -281,13 +397,66 @@ function renderBasicResult(data) {
   h += `<div class="eumyang-bar-wrap"><div class="eumyang-bar"><div class="yang" style="width:${yPct}%"></div><div class="eum" style="width:${100 - yPct}%"></div></div><div class="eumyang-labels"><span>양 ${ey.yang}</span><span>음 ${ey.eum}</span></div></div></div>`;
 
   // 오행
-  h += `<div class="result-card"><h3>오행 분석</h3><div class="oheng-chart">`;
+  h += `<div class="result-card"><h3>오행 분석</h3>`;
+  h += renderOhengRadar(oh);
+  h += `<div class="oheng-chart">`;
   [{k:'목',c:'wood',e:'🌳'},{k:'화',c:'fire',e:'🔥'},{k:'토',c:'earth',e:'⛰️'},{k:'금',c:'metal',e:'⚔️'},{k:'수',c:'water',e:'💧'}].forEach(o => {
     const pct = oh.percentages[o.k];
     h += `<div class="oheng-row"><div class="oh-label">${o.e} ${o.k}</div><div class="oh-bar-wrap"><div class="oh-bar ${o.c}" style="width:${Math.max(pct, 5)}%">${pct}%</div></div></div>`;
   });
   if (oh.missing.length) h += `<div class="oheng-missing">⚠ 부족한 오행: ${oh.missing.join(', ')}</div>`;
   h += `</div></div>`;
+
+  // 십이운성
+  if (saju.sipyiUnsung) {
+    h += `<div class="result-card"><h3>십이운성</h3><div class="unsung-grid">`;
+    const pillarsForUnsung = [saju.yearPillar, saju.monthPillar, saju.dayPillar];
+    if (saju.hourPillar) pillarsForUnsung.push(saju.hourPillar);
+    pillarsForUnsung.forEach((p, i) => {
+      const u = saju.sipyiUnsung[i];
+      if (u) {
+        h += `<div class="unsung-item">
+          <div class="ui-pillar">${esc(p.name)}</div>
+          <div class="ui-name">${esc(u.name)}</div>
+          <div class="ui-desc">${esc(u.desc)}</div>
+        </div>`;
+      }
+    });
+    h += `</div></div>`;
+  }
+
+  // 신살
+  if (saju.sinsal && saju.sinsal.length > 0) {
+    h += `<div class="result-card"><h3>신살 분석</h3><div class="sinsal-list">`;
+    saju.sinsal.forEach(s => {
+      h += `<div class="sinsal-item">
+        <div class="si-badge">${esc(s.name)}</div>
+        <div class="si-info">
+          <div class="si-location">${esc(s.pillar)}의 ${esc(s.jiji)}</div>
+          <div class="si-desc">${esc(s.desc)}</div>
+        </div>
+      </div>`;
+    });
+    h += `</div></div>`;
+  }
+
+  // 대운
+  if (saju.daeun && saju.daeun.length > 0) {
+    h += `<div class="result-card"><h3>대운 흐름</h3><p style="font-size:0.8rem;color:var(--text-secondary);margin-bottom:16px">10년 단위로 변화하는 운의 흐름입니다</p><div class="daeun-timeline">`;
+    const currentAge = new Date().getFullYear() - saju.birthInfo.year;
+    saju.daeun.forEach(d => {
+      const isCurrent = currentAge >= d.startAge && currentAge < d.endAge;
+      h += `<div class="daeun-item${isCurrent ? ' current' : ''}">
+        <div class="di-age">${d.startAge}~${d.endAge}세</div>
+        <div class="di-ganji">
+          <span style="color:${d.cheonganColor || 'inherit'}">${esc(d.cheonganHanja)}</span>
+          <span style="color:${d.jijiColor || 'inherit'}">${esc(d.jijiHanja)}</span>
+        </div>
+        <div class="di-korean">${esc(d.cheongan)}${esc(d.jiji)}</div>
+      </div>`;
+    });
+    h += `</div></div>`;
+  }
 
   // AI 해석 섹션들
   if (interp.personality) {
@@ -332,6 +501,7 @@ function renderBasicResult(data) {
   </div>`;
   document.getElementById('basicResult').innerHTML = h;
   document.getElementById('basicResult').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  animateResultCards('basicResult');
 }
 
 // ===== 오늘의 운세 =====
@@ -390,6 +560,7 @@ function renderTodayResult(data) {
   </div>`;
   document.getElementById('todayResult').innerHTML = h;
   document.getElementById('todayResult').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  animateResultCards('todayResult');
 }
 
 // ===== 궁합 =====
@@ -467,6 +638,7 @@ function renderCompatResult(data) {
   </div>`;
   document.getElementById('compatResult').innerHTML = h;
   document.getElementById('compatResult').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  animateResultCards('compatResult');
 }
 
 // ===== 신년운세 =====
@@ -608,13 +780,66 @@ function renderNewYearResult(data) {
 
   // 오행 차트
   const oh = saju.ohengAnalysis;
-  h += `<div class="result-card"><h3>오행 비율</h3><div class="oheng-chart">`;
+  h += `<div class="result-card"><h3>오행 비율</h3>`;
+  h += renderOhengRadar(oh);
+  h += `<div class="oheng-chart">`;
   [{k:'목',c:'wood',e:'🌳'},{k:'화',c:'fire',e:'🔥'},{k:'토',c:'earth',e:'⛰️'},{k:'금',c:'metal',e:'⚔️'},{k:'수',c:'water',e:'💧'}].forEach(o => {
     const pct = oh.percentages[o.k];
     h += `<div class="oheng-row"><div class="oh-label">${o.e} ${o.k}</div><div class="oh-bar-wrap"><div class="oh-bar ${o.c}" style="width:${Math.max(pct, 5)}%">${pct}%</div></div></div>`;
   });
   if (oh.missing.length) h += `<div class="oheng-missing">부족한 오행: ${oh.missing.join(', ')}</div>`;
   h += `</div></div>`;
+
+  // 십이운성
+  if (saju.sipyiUnsung) {
+    h += `<div class="result-card"><h3>십이운성</h3><div class="unsung-grid">`;
+    const nyPillarsForUnsung = [saju.yearPillar, saju.monthPillar, saju.dayPillar];
+    if (saju.hourPillar) nyPillarsForUnsung.push(saju.hourPillar);
+    nyPillarsForUnsung.forEach((p, i) => {
+      const u = saju.sipyiUnsung[i];
+      if (u) {
+        h += `<div class="unsung-item">
+          <div class="ui-pillar">${esc(p.name)}</div>
+          <div class="ui-name">${esc(u.name)}</div>
+          <div class="ui-desc">${esc(u.desc)}</div>
+        </div>`;
+      }
+    });
+    h += `</div></div>`;
+  }
+
+  // 신살
+  if (saju.sinsal && saju.sinsal.length > 0) {
+    h += `<div class="result-card"><h3>신살 분석</h3><div class="sinsal-list">`;
+    saju.sinsal.forEach(s => {
+      h += `<div class="sinsal-item">
+        <div class="si-badge">${esc(s.name)}</div>
+        <div class="si-info">
+          <div class="si-location">${esc(s.pillar)}의 ${esc(s.jiji)}</div>
+          <div class="si-desc">${esc(s.desc)}</div>
+        </div>
+      </div>`;
+    });
+    h += `</div></div>`;
+  }
+
+  // 대운
+  if (saju.daeun && saju.daeun.length > 0) {
+    h += `<div class="result-card"><h3>대운 흐름</h3><p style="font-size:0.8rem;color:var(--text-secondary);margin-bottom:16px">10년 단위로 변화하는 운의 흐름입니다</p><div class="daeun-timeline">`;
+    const nyCurrentAge = new Date().getFullYear() - saju.birthInfo.year;
+    saju.daeun.forEach(d => {
+      const isCurrent = nyCurrentAge >= d.startAge && nyCurrentAge < d.endAge;
+      h += `<div class="daeun-item${isCurrent ? ' current' : ''}">
+        <div class="di-age">${d.startAge}~${d.endAge}세</div>
+        <div class="di-ganji">
+          <span style="color:${d.cheonganColor || 'inherit'}">${esc(d.cheonganHanja)}</span>
+          <span style="color:${d.jijiColor || 'inherit'}">${esc(d.jijiHanja)}</span>
+        </div>
+        <div class="di-korean">${esc(d.cheongan)}${esc(d.jiji)}</div>
+      </div>`;
+    });
+    h += `</div></div>`;
+  }
 
   // 총운 내용
   h += `<div class="result-card"><h3>2026년 총운</h3><div class="interp-block"><p>${esc(cg.year_overview)}</p></div></div>`;
@@ -900,6 +1125,7 @@ function renderNewYearResult(data) {
 
   document.getElementById('newyearResult').innerHTML = h;
   document.getElementById('newyearResult').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  animateResultCards('newyearResult');
 }
 
 // ===== 리셋 =====
@@ -911,4 +1137,19 @@ function resetForm(type) {
   document.getElementById(fh[type]).style.display = 'block';
   document.getElementById(rm[type]).innerHTML = '';
   window.scrollTo(0, 0);
+}
+
+// ===== 연도 빠른 선택 =====
+function setYearPreset(btn, decade) {
+  const targetId = btn.parentElement.dataset.target;
+  const input = document.getElementById(targetId);
+  input.value = decade + 5;
+  input.focus();
+  btn.parentElement.querySelectorAll('.year-preset-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+}
+
+// ===== FAQ 토글 =====
+function toggleFaq(item) {
+  item.classList.toggle('open');
 }
