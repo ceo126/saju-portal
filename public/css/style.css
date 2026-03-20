@@ -1276,3 +1276,477 @@ body {
   .saju-col .col-top, .saju-col .col-bottom { font-size: 1.2rem; }
   .monthly-grid { grid-template-columns: 1fr; }
 }
+
+/* ===== 다크 모드 ===== */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #121212;
+    --card: #1e1e1e;
+    --text-primary: #e8e8e8;
+    --text-secondary: #a0a0a0;
+    --text-muted: #666;
+    --border: #2a2a2a;
+    --accent: #ff6b6f;
+    --accent-light: #2a1a1a;
+    --accent-dark: #e04850;
+    --star: #fee500;
+    --tag-blue: #1a2a3a;
+    --tag-blue-text: #5ba3f5;
+    --tag-pink: #2a1a1e;
+    --tag-pink-text: #f06070;
+    --discount: #ff6b6f;
+    --price: #e8e8e8;
+    --price-old: #666;
+    --shadow-sm: 0 1px 3px rgba(0,0,0,0.2);
+    --shadow: 0 2px 8px rgba(0,0,0,0.3);
+    --shadow-lg: 0 4px 20px rgba(0,0,0,0.4);
+  }
+
+  body { background: var(--bg); color: var(--text-primary); }
+
+  .app-header {
+    background: #1a1a1a;
+    border-bottom-color: var(--border);
+  }
+
+  .loading-screen { background: #121212; }
+
+  .form-section { background: var(--card); }
+  .form-page-header {
+    background: var(--card);
+    border-bottom-color: var(--border);
+  }
+
+  .result-card { background: var(--card); }
+  .result-card + .result-card { border-top-color: var(--border); }
+
+  .product-card {
+    background: var(--card);
+    border-color: var(--border);
+  }
+  .product-img {
+    background: linear-gradient(135deg, #2a1a3e, #3a1a1a);
+  }
+
+  .best-section { background: var(--card); }
+
+  .review-section {
+    background: var(--card);
+    border-top-color: var(--border);
+  }
+  .review-card { border-bottom-color: var(--border); }
+  .review-avatar { background: #333; }
+  .review-product-link { background: #252525; }
+  .review-product-link .rpl-img {
+    background: linear-gradient(135deg, #2a1a3e, #3a1a1a);
+  }
+  .review-more-btn {
+    background: var(--card);
+    border-color: var(--border);
+    color: var(--text-primary);
+  }
+
+  .quick-menu {
+    background: var(--card);
+    border-bottom-color: var(--border);
+  }
+  .quick-menu-item {
+    border-right-color: var(--border);
+    border-bottom-color: var(--border);
+  }
+  .quick-menu-item:active { background: #252525; }
+
+  /* 사주 팔자 테이블 */
+  .saju-col .col-top {
+    background: #2a2a2a;
+    border-color: #333;
+  }
+  .saju-col .col-bottom {
+    background: #242424;
+    border-color: #333;
+    border-top-color: #383838;
+  }
+
+  /* 신년운세 사주 테이블 */
+  .ny-saju-col .col-top {
+    background: #2a2a2a;
+    border-color: #333;
+  }
+  .ny-saju-col .col-bottom {
+    background: #242424;
+    border-color: #333;
+    border-top-color: #383838;
+  }
+
+  /* 사주 비교 (궁합) */
+  .saju-mini-col .mc-top {
+    background: #2a2a2a;
+    border-color: #333;
+  }
+  .saju-mini-col .mc-bottom {
+    background: #242424;
+    border-color: #333;
+    border-top-color: #383838;
+  }
+
+  /* 신년 섹션 탭 */
+  .ny-section-tabs {
+    background: #1a1a1a;
+    border-bottom-color: var(--border);
+  }
+
+  /* 운세 카드 변형 */
+  .fortune-card {
+    background: #1a1a1a;
+  }
+  .fortune-card.good {
+    background: #0f1f14;
+    border-left-color: #059669;
+  }
+  .fortune-card.warning {
+    background: #1f1a0f;
+    border-left-color: #d97706;
+  }
+  .fortune-card.info {
+    background: #0f1520;
+    border-left-color: #3b82f6;
+  }
+  .fortune-card p { color: #b0b0b0; }
+
+  /* 음식/영양제 그리드 */
+  .food-item {
+    background: #1a1a1a;
+    border-color: var(--border);
+  }
+
+  /* 사람 유형 카드 */
+  .people-card {
+    background: #1a1a1a;
+    border-color: var(--border);
+  }
+  .people-card .pc-desc { color: #a0a0a0; }
+
+  /* 전략 카드 */
+  .strategy-card {
+    background: #1a1a1a;
+    border-color: var(--border);
+  }
+  .strategy-card p { color: #a0a0a0; }
+
+  /* 월 포인트 카드 */
+  .month-point-card {
+    border-color: var(--border);
+  }
+  .month-point-card.good { background: #0f1f14; }
+  .month-point-card.bad { background: #1f0f0f; }
+  .month-point-card .mpc-text { color: #a0a0a0; }
+
+  /* 월별 운세 그리드 */
+  .month-card {
+    background: var(--card);
+    border-color: var(--border);
+  }
+  .month-card.best { border-color: #059669; background: #0f1f14; }
+  .month-card.caution { border-color: #d97706; background: #1f1a0f; }
+
+  /* 오행 차트 바 배경 */
+  .oheng-row .oh-bar-wrap { background: #2a2a2a; }
+
+  /* 월별 차트 바 배경 */
+  .monthly-bar .bar-track { background: #2a2a2a; }
+
+  /* 궁합 바 */
+  .compat-bar-track { background: #2a2a2a; }
+
+  /* 궁합 스코어 히어로 */
+  .compat-score-hero {
+    background: linear-gradient(180deg, var(--accent-light) 0%, var(--card) 100%);
+  }
+
+  /* 오늘의 운세 히어로 */
+  .today-hero { background: var(--card); }
+
+  /* 럭키 아이템 */
+  .lucky-item {
+    background: #1a1a1a;
+    border-color: var(--border);
+  }
+
+  /* 분석중 */
+  .analyzing { background: var(--card); }
+  .analyzing .an-spinner { border-color: #333; border-top-color: var(--accent); }
+
+  /* 폼 인풋 */
+  .form-group input, .form-group select {
+    background: #2a2a2a;
+    border-color: #383838;
+    color: var(--text-primary);
+  }
+  .form-group input:focus, .form-group select:focus {
+    border-color: #555;
+  }
+  .form-group input::placeholder { color: #555; }
+
+  /* 성별 버튼 */
+  .gender-btn {
+    background: #2a2a2a;
+    border-color: #383838;
+    color: var(--text-secondary);
+  }
+  .gender-btn.active {
+    border-color: var(--accent);
+    background: var(--accent);
+    color: #fff;
+  }
+
+  /* 다시하기 */
+  .retry-btn {
+    background: var(--card);
+    border-color: var(--border);
+    color: var(--text-primary);
+  }
+
+  /* 파트너 프로필 */
+  .partner-profile {
+    background: linear-gradient(135deg, #2a1520, #1a1530);
+  }
+  .partner-profile .pp-value { color: #b0b0b0; }
+  .partner-profile .pp-tags .tag {
+    background: rgba(255,255,255,0.1);
+  }
+
+  /* 에러 메시지 */
+  .error-msg {
+    background: #2a1a1a;
+    color: var(--accent);
+  }
+
+  /* 태그 */
+  .tag.primary { background: #2a2a2a; color: var(--text-primary); }
+  .tag.good { background: #0f1f14; color: #34d399; }
+  .tag.caution { background: #1f1a0f; color: #fbbf24; }
+
+  /* 해석 블록 */
+  .interp-block p { color: #b0b0b0; }
+  .interp-block ul li { color: #b0b0b0; }
+
+  /* 라이프스타일 */
+  .lifestyle-item { border-bottom-color: var(--border); }
+
+  /* 푸터 */
+  .site-footer {
+    background: #1a1a1a;
+    border-top-color: var(--border);
+  }
+
+  /* submit 버튼은 유지 */
+  .submit-btn { background: var(--accent); color: #fff; }
+  .submit-btn:active { background: var(--accent-dark); }
+  .submit-btn:disabled { background: #333; color: #666; }
+
+  /* 배너 - 이미 어두움, 유지 */
+  /* .banner-strip - 유지 */
+  /* .ilgan-hero - 유지 */
+  /* .newyear-hero - 유지 */
+  /* .seun-info-card - 유지 */
+  /* .hero-section - 유지 */
+}
+
+/* ===== 인쇄 스타일 ===== */
+@media print {
+  .app-header,
+  .tab-nav,
+  .submit-btn,
+  .retry-btn,
+  .loading-screen,
+  .hero-section,
+  .quick-menu,
+  .banner-strip,
+  .best-section,
+  .review-section,
+  .site-footer,
+  .ny-section-tabs {
+    display: none !important;
+  }
+
+  .ny-section {
+    display: block !important;
+  }
+
+  body {
+    max-width: 100%;
+    background: #fff;
+    color: #000;
+  }
+
+  .result-card {
+    page-break-inside: avoid;
+    background: #fff;
+    color: #000;
+  }
+
+  .form-section,
+  .product-card,
+  .fortune-card,
+  .food-item,
+  .people-card,
+  .strategy-card,
+  .month-point-card,
+  .partner-profile,
+  .today-hero,
+  .compat-score-hero {
+    background: #fff !important;
+    color: #000 !important;
+  }
+
+  .interp-block p,
+  .interp-block ul li,
+  .fortune-card p,
+  .people-card .pc-desc,
+  .strategy-card p,
+  .month-point-card .mpc-text,
+  .partner-profile .pp-value {
+    color: #000 !important;
+  }
+}
+
+/* ===== 스크롤 애니메이션 ===== */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.fade-in-up {
+  opacity: 0;
+  transform: translateY(20px);
+  transition: opacity 0.6s ease, transform 0.6s ease;
+}
+
+.fade-in-up.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* ===== 토스트 알림 ===== */
+.toast {
+  position: fixed;
+  bottom: -60px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #333;
+  color: #fff;
+  padding: 12px 24px;
+  border-radius: 24px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  z-index: 10000;
+  transition: bottom 0.3s ease;
+  white-space: nowrap;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+}
+.toast.show {
+  bottom: 32px;
+}
+
+/* ===== 공유/프린트 버튼 ===== */
+.result-actions {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+.share-btn, .print-btn {
+  flex: 1;
+  padding: 13px;
+  border-radius: var(--radius-xs);
+  font-size: 0.88rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: var(--transition);
+  text-align: center;
+}
+.share-btn {
+  background: var(--accent);
+  color: #fff;
+  border: none;
+}
+.share-btn:active { background: var(--accent-dark); }
+.print-btn {
+  background: #fff;
+  color: var(--text-primary);
+  border: 1.5px solid var(--border);
+}
+.print-btn:active { background: #f5f5f5; }
+
+/* ===== 히스토리 섹션 ===== */
+.history-section {
+  padding: 20px;
+  background: #fff;
+  border-bottom: 8px solid var(--border);
+}
+.history-header {
+  margin-bottom: 14px;
+}
+.history-title {
+  font-size: 1.1rem;
+  font-weight: 800;
+}
+.history-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px;
+  background: #fafafa;
+  border-radius: var(--radius-xs);
+  margin-bottom: 8px;
+  cursor: pointer;
+  border: 1px solid var(--border);
+  transition: var(--transition);
+}
+.history-card:active { transform: scale(0.99); }
+.history-card .hc-icon {
+  font-size: 1.4rem;
+  flex-shrink: 0;
+}
+.history-card .hc-info { flex: 1; }
+.history-card .hc-type {
+  font-size: 0.75rem;
+  color: var(--accent);
+  font-weight: 700;
+}
+.history-card .hc-summary {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-top: 2px;
+}
+.history-card .hc-date {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+}
+
+/* ===== 다크모드: 신규 요소 ===== */
+@media (prefers-color-scheme: dark) {
+  .toast { background: #e8e8e8; color: #121212; }
+  .print-btn {
+    background: var(--card);
+    color: var(--text-primary);
+    border-color: var(--border);
+  }
+  .print-btn:active { background: #252525; }
+  .history-section { background: var(--card); border-bottom-color: var(--border); }
+  .history-card {
+    background: #252525;
+    border-color: var(--border);
+  }
+}
+
+/* ===== 인쇄: 신규 요소 ===== */
+@media print {
+  .toast, .share-btn, .print-btn, .result-actions, .history-section { display: none !important; }
+}

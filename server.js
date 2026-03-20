@@ -1,11 +1,42 @@
 require('dotenv').config();
 const express = require('express');
+const compression = require('compression');
 const path = require('path');
 const sajuEngine = require('./lib/saju-engine');
 const SajuInterpreter = require('./lib/saju-interpreter');
 
 const app = express();
 const PORT = process.env.PORT || 8210;
+
+// API 응답 캐시 (동일 생년월일 데이터 → 1시간 캐싱)
+const CACHE_TTL = 60 * 60 * 1000; // 1시간
+const responseCache = new Map();
+
+function getCacheKey(endpoint, data) {
+  return `${endpoint}:${JSON.stringify(data)}`;
+}
+
+function getCachedResponse(key) {
+  const entry = responseCache.get(key);
+  if (!entry) return null;
+  if (Date.now() - entry.timestamp > CACHE_TTL) {
+    responseCache.delete(key);
+    return null;
+  }
+  return entry.data;
+}
+
+function setCachedResponse(key, data) {
+  responseCache.set(key, { data, timestamp: Date.now() });
+}
+
+// 오래된 캐시 엔트리 정리 (10분마다)
+setInterval(() => {
+  const now = Date.now();
+  for (const [key, entry] of responseCache) {
+    if (now - entry.timestamp > CACHE_TTL) responseCache.delete(key);
+  }
+}, 10 * 60 * 1000).unref();
 
 // Rate Limiting (IP당 분당 최대 요청 수)
 const RATE_LIMIT = 10; // 분당 10회
@@ -44,17 +75,25 @@ if (!process.env.GEMINI_API_KEY) {
 }
 const interpreter = new SajuInterpreter(process.env.GEMINI_API_KEY);
 
-// 보안 헤더
+// gzip 압축
+app.use(compression());
+
+// 보안 헤더 + CORS
 app.use((req, res, next) => {
   res.setHeader('X-Content-Type-Options', 'nosniff');
   res.setHeader('X-Frame-Options', 'DENY');
   res.setHeader('X-XSS-Protection', '1; mode=block');
   res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+  // CORS 헤더
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  if (req.method === 'OPTIONS') return res.sendStatus(204);
   next();
 });
 
 app.use(express.json({ limit: '100kb' }));
-app.use(express.static(path.join(__dirname, 'public')));
+app.use(express.static(path.join(__dirname, 'public'), { etag: true }));
 
 // 공통: 생년월일시 파싱 + 검증
 function parseBirthInput(data) {
@@ -78,16 +117,32 @@ function parseBirthInput(data) {
   return { year, month, day, hour, gender };
 }
 
+// Health check
+app.get('/api/health', (req, res) => {
+  res.json({
+    status: 'ok',
+    uptime: process.uptime(),
+    timestamp: new Date().toISOString(),
+    cacheSize: responseCache.size,
+  });
+});
+
 // 기본 사주 풀이
 app.post('/api/saju/basic', rateLimit, async (req, res) => {
   try {
     const input = parseBirthInput(req.body);
     if (input.error) return res.status(400).json({ error: input.error });
 
+    const cacheKey = getCacheKey('basic', input);
+    const cached = getCachedResponse(cacheKey);
+    if (cached) return res.json(cached);
+
     const sajuResult = sajuEngine.calculate(input.year, input.month, input.day, input.hour, input.gender);
     const interpretation = await interpreter.interpretBasic(sajuResult);
 
-    res.json({ success: true, saju: sajuResult, interpretation });
+    const result = { success: true, saju: sajuResult, interpretation };
+    setCachedResponse(cacheKey, result);
+    res.json(result);
   } catch (e) {
     console.error('기본 사주 오류:', e);
     res.status(500).json({ error: '사주 분석 중 오류가 발생했습니다' });
@@ -103,13 +158,19 @@ app.post('/api/saju/compatibility', rateLimit, async (req, res) => {
     const input2 = parseBirthInput(person2);
     if (input2.error) return res.status(400).json({ error: '두 번째 사람: ' + input2.error });
 
+    const cacheKey = getCacheKey('compatibility', { input1, input2 });
+    const cached = getCachedResponse(cacheKey);
+    if (cached) return res.json(cached);
+
     const saju1 = sajuEngine.calculate(input1.year, input1.month, input1.day, input1.hour, input1.gender);
     const saju2 = sajuEngine.calculate(input2.year, input2.month, input2.day, input2.hour, input2.gender);
 
     const compatResult = sajuEngine.calculateCompatibility(saju1, saju2);
     const interpretation = await interpreter.interpretCompatibility(compatResult);
 
-    res.json({ success: true, saju1, saju2, compatibility: { ...compatResult, interpretation } });
+    const result = { success: true, saju1, saju2, compatibility: { ...compatResult, interpretation } };
+    setCachedResponse(cacheKey, result);
+    res.json(result);
   } catch (e) {
     console.error('궁합 오류:', e);
     res.status(500).json({ error: '궁합 분석 중 오류가 발생했습니다' });
@@ -122,11 +183,19 @@ app.post('/api/saju/today', rateLimit, async (req, res) => {
     const input = parseBirthInput(req.body);
     if (input.error) return res.status(400).json({ error: input.error });
 
+    // 오늘 날짜를 캐시 키에 포함 (날짜가 바뀌면 캐시 무효화)
+    const todayStr = new Date().toISOString().slice(0, 10);
+    const cacheKey = getCacheKey('today', { ...input, todayStr });
+    const cached = getCachedResponse(cacheKey);
+    if (cached) return res.json(cached);
+
     const sajuResult = sajuEngine.calculate(input.year, input.month, input.day, input.hour, input.gender);
     const todayInfo = sajuEngine.getTodayInfo();
     const interpretation = await interpreter.interpretToday(sajuResult, todayInfo);
 
-    res.json({ success: true, saju: sajuResult, today: todayInfo, interpretation });
+    const result = { success: true, saju: sajuResult, today: todayInfo, interpretation };
+    setCachedResponse(cacheKey, result);
+    res.json(result);
   } catch (e) {
     console.error('오늘의 운세 오류:', e);
     res.status(500).json({ error: '오늘의 운세 분석 중 오류가 발생했습니다' });
@@ -139,15 +208,26 @@ app.post('/api/saju/newyear', rateLimit, async (req, res) => {
     const input = parseBirthInput(req.body);
     if (input.error) return res.status(400).json({ error: input.error });
 
+    const cacheKey = getCacheKey('newyear', input);
+    const cached = getCachedResponse(cacheKey);
+    if (cached) return res.json(cached);
+
     const sajuResult = sajuEngine.calculate(input.year, input.month, input.day, input.hour, input.gender);
     const seunAnalysis = sajuEngine.getSeunAnalysis(sajuResult);
     const interpretation = await interpreter.interpretNewYearDetailed(sajuResult, seunAnalysis);
 
-    res.json({ success: true, saju: sajuResult, seunAnalysis, interpretation });
+    const result = { success: true, saju: sajuResult, seunAnalysis, interpretation };
+    setCachedResponse(cacheKey, result);
+    res.json(result);
   } catch (e) {
     console.error('신년운세 오류:', e);
     res.status(500).json({ error: '신년운세 분석 중 오류가 발생했습니다' });
   }
+});
+
+// 404 핸들러
+app.use((req, res) => {
+  res.status(404).json({ error: '요청하신 페이지를 찾을 수 없습니다' });
 });
 
 process.on('uncaughtException', (err) => {

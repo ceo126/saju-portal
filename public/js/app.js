@@ -13,9 +13,133 @@ function esc(str) {
   return d.innerHTML;
 }
 
+// ===== 폼 데이터 자동 저장/복원 (localStorage) =====
+function saveFormData(prefix, genderKey) {
+  try {
+    const saved = JSON.parse(localStorage.getItem('saju_form_data') || '{}');
+    saved[prefix] = {
+      year: document.getElementById(`${prefix}Year`).value,
+      month: document.getElementById(`${prefix}Month`).value,
+      day: document.getElementById(`${prefix}Day`).value,
+      hour: document.getElementById(`${prefix}Hour`).value,
+      gender: state.genders[genderKey]
+    };
+    localStorage.setItem('saju_form_data', JSON.stringify(saved));
+  } catch(e) { /* localStorage 실패 무시 */ }
+}
+
+function restoreFormData() {
+  try {
+    const saved = JSON.parse(localStorage.getItem('saju_form_data') || '{}');
+    const prefixGenderMap = { basic: 'basic', today: 'today', compat1: 'compat1', compat2: 'compat2', newyear: 'newyear' };
+    Object.keys(prefixGenderMap).forEach(prefix => {
+      const d = saved[prefix];
+      if (!d) return;
+      const yEl = document.getElementById(`${prefix}Year`);
+      const mEl = document.getElementById(`${prefix}Month`);
+      const dEl = document.getElementById(`${prefix}Day`);
+      const hEl = document.getElementById(`${prefix}Hour`);
+      if (yEl && d.year) yEl.value = d.year;
+      if (mEl && d.month) mEl.value = d.month;
+      if (dEl && d.day) dEl.value = d.day;
+      if (hEl && d.hour !== undefined) hEl.value = d.hour;
+      if (d.gender) {
+        state.genders[prefix] = d.gender;
+        const container = yEl ? yEl.closest('.form-section') : null;
+        if (container) {
+          container.querySelectorAll(`.gender-btn`).forEach(b => {
+            b.classList.toggle('active', b.dataset.gender === d.gender);
+          });
+        }
+      }
+    });
+  } catch(e) { /* localStorage 실패 무시 */ }
+}
+
+// ===== 결과 공유 기능 =====
+async function shareResult(title, text) {
+  if (navigator.share) {
+    try {
+      await navigator.share({ title: title, text: text, url: window.location.href });
+    } catch(e) { /* 사용자 취소 */ }
+  } else {
+    try {
+      await navigator.clipboard.writeText(text + '\n' + window.location.href);
+      showToast('결과가 클립보드에 복사되었습니다!');
+    } catch(e) {
+      showToast('공유 기능을 사용할 수 없습니다.');
+    }
+  }
+}
+
+function showToast(msg) {
+  const el = document.getElementById('toast');
+  if (!el) return;
+  el.textContent = msg;
+  el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), 2500);
+}
+
+// ===== 결과 히스토리 (최근 5개) =====
+function saveHistory(type, inputSummary, timestamp) {
+  try {
+    let history = JSON.parse(localStorage.getItem('saju_history') || '[]');
+    history.unshift({ type: type, inputSummary: inputSummary, timestamp: timestamp });
+    if (history.length > 5) history = history.slice(0, 5);
+    localStorage.setItem('saju_history', JSON.stringify(history));
+  } catch(e) { /* localStorage 실패 무시 */ }
+}
+
+function getHistory() {
+  try {
+    return JSON.parse(localStorage.getItem('saju_history') || '[]');
+  } catch(e) { return []; }
+}
+
+function renderHistoryOnHome() {
+  const history = getHistory();
+  const section = document.getElementById('historySection');
+  const list = document.getElementById('historyList');
+  if (!section || !list || history.length === 0) return;
+  section.style.display = 'block';
+  const typeLabels = { basic: '종합 사주', today: '오늘의 운세', compatibility: '사주 궁합', newyear: '신년운세' };
+  const typeIcons = { basic: '🔮', today: '📅', compatibility: '💕', newyear: '🎆' };
+  const typePages = { basic: 'basic', today: 'today', compatibility: 'compatibility', newyear: 'newyear' };
+  let h = '';
+  history.forEach(item => {
+    const label = typeLabels[item.type] || item.type;
+    const icon = typeIcons[item.type] || '🔮';
+    const page = typePages[item.type] || 'home';
+    const date = new Date(item.timestamp);
+    const dateStr = `${date.getFullYear()}.${String(date.getMonth()+1).padStart(2,'0')}.${String(date.getDate()).padStart(2,'0')}`;
+    h += `<div class="history-card" onclick="openPage('${esc(page)}')">
+      <div class="history-icon">${icon}</div>
+      <div class="history-info">
+        <div class="history-label">${esc(label)}</div>
+        <div class="history-summary">${esc(item.inputSummary)}</div>
+      </div>
+      <div class="history-date">${esc(dateStr)}</div>
+    </div>`;
+  });
+  list.innerHTML = h;
+}
+
+// ===== 프린트 기능 =====
+function printResult() {
+  window.print();
+}
+
 // ===== 초기화 =====
 window.addEventListener('load', () => {
-  setTimeout(() => document.getElementById('loadingScreen').classList.add('hide'), 800);
+  setTimeout(() => {
+    document.getElementById('loadingScreen').classList.add('hide');
+    renderHistoryOnHome();
+  }, 800);
+  restoreFormData();
+  // Service Worker 등록
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('/sw.js').catch(() => {});
+  }
 });
 
 // ===== 페이지 네비게이션 =====
@@ -66,12 +190,14 @@ function showError(id, msg) {
 }
 
 function showAnalyzing(targetId) {
-  document.getElementById(targetId).innerHTML = `
+  const el = document.getElementById(targetId);
+  el.innerHTML = `
     <div class="analyzing">
       <div class="an-spinner"></div>
       <p>사주를 분석하고 있습니다<span class="dots"></span></p>
       <p style="font-size:0.78rem;color:var(--text-muted);margin-top:6px">AI가 정성껏 풀어드리는 중...</p>
     </div>`;
+  el.scrollIntoView({ behavior: 'smooth', block: 'center' });
 }
 
 // ===== 버튼 비활성화 (중복 요청 방지) =====
@@ -107,12 +233,15 @@ async function submitBasic() {
   if (state.loading) return;
   const v = validateForm('basic');
   if (!v.valid) return showError('basicError', v.error);
+  saveFormData('basic', 'basic');
   document.getElementById('basicForm').style.display = 'none';
   document.getElementById('basicFormHeader').style.display = 'none';
   showAnalyzing('basicResult');
   setSubmitButtons(true);
   try {
-    const data = await apiCall('/api/saju/basic', getFormData('basic', 'basic'));
+    const fd = getFormData('basic', 'basic');
+    const data = await apiCall('/api/saju/basic', fd);
+    saveHistory('basic', `${fd.year}년 ${fd.month}월 ${fd.day}일`, Date.now());
     renderBasicResult(data);
   } catch(e) {
     document.getElementById('basicResult').innerHTML = `<div class="result-card"><p style="text-align:center;color:var(--accent)">${esc(e.message)}</p><button class="retry-btn" onclick="resetForm('basic')">다시 시도</button></div>`;
@@ -196,8 +325,13 @@ function renderBasicResult(data) {
   if (interp.life_advice) {
     h += `<div class="result-card" style="background:#fafafa"><h3>인생 종합 조언</h3><div class="interp-block"><p>${esc(interp.life_advice)}</p></div></div>`;
   }
-  h += `<div class="result-card"><button class="retry-btn" onclick="resetForm('basic')">다시 분석하기</button></div>`;
+  h += `<div class="result-card action-buttons">
+    <button class="share-btn" onclick="shareResult('사주포털', '${esc(saju.personality.title)} - 사주포털 AI 종합 사주 분석 결과')">결과 공유하기</button>
+    <button class="print-btn" onclick="printResult()">프린트</button>
+    <button class="retry-btn" onclick="resetForm('basic')">다시 분석하기</button>
+  </div>`;
   document.getElementById('basicResult').innerHTML = h;
+  document.getElementById('basicResult').scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
 // ===== 오늘의 운세 =====
@@ -205,12 +339,15 @@ async function submitToday() {
   if (state.loading) return;
   const v = validateForm('today');
   if (!v.valid) return showError('todayError', v.error);
+  saveFormData('today', 'today');
   document.getElementById('todayForm').style.display = 'none';
   document.getElementById('todayFormHeader').style.display = 'none';
   showAnalyzing('todayResult');
   setSubmitButtons(true);
   try {
-    const data = await apiCall('/api/saju/today', getFormData('today', 'today'));
+    const fd = getFormData('today', 'today');
+    const data = await apiCall('/api/saju/today', fd);
+    saveHistory('today', `${fd.year}년 ${fd.month}월 ${fd.day}일`, Date.now());
     renderTodayResult(data);
   } catch(e) {
     document.getElementById('todayResult').innerHTML = `<div class="result-card"><p style="text-align:center;color:var(--accent)">${esc(e.message)}</p><button class="retry-btn" onclick="resetForm('today')">다시 시도</button></div>`;
@@ -246,8 +383,13 @@ function renderTodayResult(data) {
   if (interp.caution) {
     h += `<div class="result-card" style="background:#fffbeb"><h3>오늘 주의할 점</h3><div class="interp-block"><p>${esc(interp.caution)}</p></div></div>`;
   }
-  h += `<div class="result-card"><button class="retry-btn" onclick="resetForm('today')">다시 보기</button></div>`;
+  h += `<div class="result-card action-buttons">
+    <button class="share-btn" onclick="shareResult('사주포털', '오늘의 운세 ${esc(String(interp.score))}점 - 사주포털 AI 분석')">결과 공유하기</button>
+    <button class="print-btn" onclick="printResult()">프린트</button>
+    <button class="retry-btn" onclick="resetForm('today')">다시 보기</button>
+  </div>`;
   document.getElementById('todayResult').innerHTML = h;
+  document.getElementById('todayResult').scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
 // ===== 궁합 =====
@@ -257,15 +399,17 @@ async function submitCompatibility() {
   if (!v1.valid) return showError('compatError', '첫 번째 사람: ' + v1.error);
   const v2 = validateForm('compat2');
   if (!v2.valid) return showError('compatError', '두 번째 사람: ' + v2.error);
+  saveFormData('compat1', 'compat1');
+  saveFormData('compat2', 'compat2');
   document.getElementById('compatForm').style.display = 'none';
   document.getElementById('compatFormHeader').style.display = 'none';
   showAnalyzing('compatResult');
   setSubmitButtons(true);
   try {
-    const data = await apiCall('/api/saju/compatibility', {
-      person1: getFormData('compat1', 'compat1'),
-      person2: getFormData('compat2', 'compat2')
-    });
+    const fd1 = getFormData('compat1', 'compat1');
+    const fd2 = getFormData('compat2', 'compat2');
+    const data = await apiCall('/api/saju/compatibility', { person1: fd1, person2: fd2 });
+    saveHistory('compatibility', `${fd1.year}년생 & ${fd2.year}년생`, Date.now());
     renderCompatResult(data);
   } catch(e) {
     document.getElementById('compatResult').innerHTML = `<div class="result-card"><p style="text-align:center;color:var(--accent)">${esc(e.message)}</p><button class="retry-btn" onclick="resetForm('compatibility')">다시 시도</button></div>`;
@@ -316,8 +460,13 @@ function renderCompatResult(data) {
   h += `<div class="result-card"><h3>이 커플의 장점</h3><ul style="list-style:none;padding:0">${interp.strengths.map(s=>`<li style="padding:6px 0 6px 16px;position:relative;font-size:0.88rem"><span style="position:absolute;left:0;color:#059669">✓</span>${esc(s)}</li>`).join('')}</ul></div>`;
   h += `<div class="result-card" style="background:#fffbeb"><h3>주의할 점</h3><ul style="list-style:none;padding:0">${interp.cautions.map(s=>`<li style="padding:6px 0 6px 16px;position:relative;font-size:0.88rem"><span style="position:absolute;left:0">⚠</span>${esc(s)}</li>`).join('')}</ul></div>`;
   h += `<div class="result-card" style="background:#fafafa"><h3>종합 조언</h3><div class="interp-block"><p>${esc(interp.advice)}</p></div></div>`;
-  h += `<div class="result-card"><button class="retry-btn" onclick="resetForm('compatibility')">다시 분석하기</button></div>`;
+  h += `<div class="result-card action-buttons">
+    <button class="share-btn" onclick="shareResult('사주포털', '궁합 점수 ${esc(String(score))}점 - 사주포털 AI 궁합 분석')">결과 공유하기</button>
+    <button class="print-btn" onclick="printResult()">프린트</button>
+    <button class="retry-btn" onclick="resetForm('compatibility')">다시 분석하기</button>
+  </div>`;
   document.getElementById('compatResult').innerHTML = h;
+  document.getElementById('compatResult').scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
 // ===== 신년운세 =====
@@ -325,12 +474,15 @@ async function submitNewYear() {
   if (state.loading) return;
   const v = validateForm('newyear');
   if (!v.valid) return showError('newyearError', v.error);
+  saveFormData('newyear', 'newyear');
   document.getElementById('newyearForm').style.display = 'none';
   document.getElementById('newyearFormHeader').style.display = 'none';
   showAnalyzing('newyearResult');
   setSubmitButtons(true);
   try {
-    const data = await apiCall('/api/saju/newyear', getFormData('newyear', 'newyear'));
+    const fd = getFormData('newyear', 'newyear');
+    const data = await apiCall('/api/saju/newyear', fd);
+    saveHistory('newyear', `${fd.year}년 ${fd.month}월 ${fd.day}일`, Date.now());
     renderNewYearResult(data);
   } catch(e) {
     document.getElementById('newyearResult').innerHTML = `<div class="result-card"><p style="text-align:center;color:var(--accent)">${esc(e.message)}</p><button class="retry-btn" onclick="resetForm('newyear')">다시 시도</button></div>`;
@@ -738,10 +890,16 @@ function renderNewYearResult(data) {
   }
   h += `</div>`; // end career section
 
-  // 다시 분석하기 버튼
-  h += `<div class="result-card"><button class="retry-btn" onclick="resetForm('newyear')">다시 분석하기</button></div>`;
+  // 공유/프린트/다시 분석하기 버튼
+  const nyTheme = esc(cg.year_theme || '2026 병오년 신년운세');
+  h += `<div class="result-card action-buttons">
+    <button class="share-btn" onclick="shareResult('사주포털', '${nyTheme} - 사주포털 AI 신년운세')">결과 공유하기</button>
+    <button class="print-btn" onclick="printResult()">프린트</button>
+    <button class="retry-btn" onclick="resetForm('newyear')">다시 분석하기</button>
+  </div>`;
 
   document.getElementById('newyearResult').innerHTML = h;
+  document.getElementById('newyearResult').scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
 // ===== 리셋 =====
