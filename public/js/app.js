@@ -5,8 +5,79 @@ const state = {
   loading: false
 };
 
+const lastResults = {};
+
+// ===== 결과 텍스트 요약 (공유용) =====
+function generateResultSummary(type, data) {
+  if (!data) return '';
+  let text = '🔮 사주포털 분석 결과\n';
+  text += '━━━━━━━━━━━━━━━\n';
+
+  if (type === 'basic') {
+    var s = data.saju, interp = data.interpretation;
+    text += '📅 ' + s.birthInfo.year + '\ub144 ' + s.birthInfo.month + '\uc6d4 ' + s.birthInfo.day + '\uc77c\uc0dd\n';
+    text += '🎭 ' + s.personality.title + ' \xB7 ' + s.ilgan + '\uc77c\uac04\n';
+    text += '🐾 ' + s.animal + '\ub744 ' + s.animalEmoji + '\n';
+    if (s.iljuSpecial) text += '💎 ' + s.dayPillar.ganji + '\uc77c\uc8fc - ' + s.iljuSpecial.title + '\n';
+    text += '\n📊 \uc624\ud589: \ubaa9' + s.ohengAnalysis.counts['\ubaa9'] + ' \ud654' + s.ohengAnalysis.counts['\ud654'] + ' \ud1a0' + s.ohengAnalysis.counts['\ud1a0'] + ' \uae08' + s.ohengAnalysis.counts['\uae08'] + ' \uc218' + s.ohengAnalysis.counts['\uc218'] + '\n';
+    if (interp && interp.summary) text += '\n💬 ' + interp.summary + '\n';
+  } else if (type === 'today') {
+    var td = data.today, ti = data.interpretation;
+    text += '📅 ' + td.date + '\n';
+    text += '⭐ \uc624\ub298\uc758 \uc6b4\uc138: ' + ti.score + '\uc810\n';
+    text += '💬 ' + ti.summary + '\n';
+  } else if (type === 'compatibility') {
+    var s1 = data.saju1, s2 = data.saju2, cp = data.compatibility;
+    text += '💕 \uc0ac\uc8fc \uad81\ud569: ' + cp.score + '\uc810\n';
+    text += s1.personality.title + ' \u2665 ' + s2.personality.title + '\n';
+    if (cp.interpretation) text += '💬 ' + cp.interpretation.title + '\n';
+  } else if (type === 'newyear') {
+    var ns = data.saju, ni = data.interpretation;
+    text += '🐎 2026 \ubcd1\uc624\ub144 \uc2e0\ub144\uc6b4\uc138\n';
+    text += '🎭 ' + ns.personality.title + ' \xB7 ' + ns.ilgan + '\uc77c\uac04\n';
+    if (ni && ni.chongun) {
+      text += '🔑 ' + (ni.chongun.year_keyword || '') + '\n';
+      text += '💬 ' + (ni.chongun.year_theme || '') + '\n';
+    }
+  }
+
+  text += '\n━━━━━━━━━━━━━━━\n';
+  text += '📱 \uc0ac\uc8fc\ud3ec\ud138\uc5d0\uc11c \ubb34\ub8cc\ub85c \ud655\uc778\ud558\uc138\uc694!';
+  return text;
+}
+
+// ===== 온보딩 =====
+function showOnboarding() {
+  if (localStorage.getItem('saju_onboarded')) return;
+  var overlay = document.getElementById('onboardingOverlay');
+  if (overlay) overlay.classList.add('show');
+}
+
+function closeOnboarding() {
+  var overlay = document.getElementById('onboardingOverlay');
+  if (overlay) overlay.classList.remove('show');
+  localStorage.setItem('saju_onboarded', '1');
+}
+
+// ===== 오프라인 알림 =====
+window.addEventListener('online', function() { showToast('인터넷 연결이 복구되었습니다'); });
+window.addEventListener('offline', function() { showToast('인터넷 연결이 끊어졌습니다. 일부 기능이 제한됩니다.'); });
+
 // ===== Observer 메모리 누수 방지 =====
 const activeObservers = [];
+
+// 프론트엔드 에러 리포팅
+window.addEventListener('error', (e) => {
+  fetch('/api/log/error', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      message: e.message,
+      source: e.filename,
+      line: e.lineno
+    })
+  }).catch(() => {});
+});
 
 function cleanupObservers() {
   activeObservers.forEach(obs => obs.disconnect());
@@ -30,6 +101,30 @@ const OHENG_COLORS = {
   '금': '#94a3b8',
   '수': '#3b82f6'
 };
+
+// ===== 카운트업 애니메이션 =====
+function animateCountUp(elementSelector, target, duration = 1000) {
+  setTimeout(() => {
+    const els = document.querySelectorAll(elementSelector);
+    els.forEach(el => {
+      let start = 0;
+      const step = target / (duration / 16);
+      const timer = setInterval(() => {
+        start += step;
+        if (start >= target) {
+          start = target;
+          clearInterval(timer);
+        }
+        el.textContent = Math.round(start);
+      }, 16);
+    });
+  }, 300);
+}
+
+// ===== 오행 테마 설정 =====
+function setOhengTheme(strongestOheng) {
+  document.documentElement.style.setProperty('--oheng-accent', OHENG_COLORS[strongestOheng] || 'var(--accent)');
+}
 
 // ===== 사주 용어 사전 =====
 const SAJU_GLOSSARY = [
@@ -223,10 +318,19 @@ window.addEventListener('load', () => {
       const el = document.querySelector('.best-count .number');
       if (el) el.textContent = d.count.toLocaleString();
     }).catch(() => {});
+    showOnboarding();
   }, 800);
   restoreFormData();
-  setupRealtimeValidation();
-  setupAutoFocus();
+  // 비핵심 기능 지연 로딩
+  if ('requestIdleCallback' in window) {
+    requestIdleCallback(() => {
+      setupAutoFocus();
+      setupRealtimeValidation();
+    });
+  } else {
+    setupAutoFocus();
+    setupRealtimeValidation();
+  }
   // Service Worker 등록
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('/sw.js').catch(() => {});
@@ -386,6 +490,7 @@ async function submitBasic() {
   try {
     const fd = getFormData('basic', 'basic');
     const data = await apiCall('/api/saju/basic', fd);
+    lastResults.basic = data;
     saveHistory('basic', `${fd.year}년 ${fd.month}월 ${fd.day}일`, Date.now());
     renderBasicResult(data);
   } catch(e) {
@@ -652,7 +757,7 @@ function renderBasicResult(data) {
     h += `</div>`;
   }
   h += `<div class="result-card action-buttons">
-    <button class="share-btn" onclick="shareResult('사주포털', '${esc(saju.personality.title)} - 사주포털 AI 종합 사주 분석 결과')">결과 공유하기</button>
+    <button class="share-btn" onclick="shareResult('사주포털', generateResultSummary('basic', lastResults.basic))">결과 공유하기</button>
     <button class="print-btn" onclick="printResult()">프린트</button>
     <button class="retry-btn" onclick="resetForm('basic')">다시 분석하기</button>
   </div>`;
@@ -660,6 +765,9 @@ function renderBasicResult(data) {
     document.getElementById('basicResult').innerHTML = h;
     document.getElementById('basicResult').scrollIntoView({ behavior: 'smooth', block: 'start' });
     animateResultCards('basicResult');
+    if (saju.ohengAnalysis && saju.ohengAnalysis.strongest) {
+      setOhengTheme(saju.ohengAnalysis.strongest.name);
+    }
   } catch (e) {
     console.error('렌더링 오류:', e);
     document.getElementById('basicResult').innerHTML = `<div class="result-card"><p style="text-align:center;color:var(--accent)">결과 표시 중 오류가 발생했습니다</p><button class="retry-btn" onclick="resetForm('basic')">다시 시도</button></div>`;
@@ -680,6 +788,7 @@ async function submitToday() {
   try {
     const fd = getFormData('today', 'today');
     const data = await apiCall('/api/saju/today', fd);
+    lastResults.today = data;
     saveHistory('today', `${fd.year}년 ${fd.month}월 ${fd.day}일`, Date.now());
     renderTodayResult(data);
   } catch(e) {
@@ -719,7 +828,7 @@ function renderTodayResult(data) {
     h += `<div class="result-card" style="background:#fffbeb"><h3>오늘 주의할 점</h3><div class="interp-block"><p>${esc(interp.caution)}</p></div></div>`;
   }
   h += `<div class="result-card action-buttons">
-    <button class="share-btn" onclick="shareResult('사주포털', '오늘의 운세 ${esc(String(interp.score))}점 - 사주포털 AI 분석')">결과 공유하기</button>
+    <button class="share-btn" onclick="shareResult('사주포털', generateResultSummary('today', lastResults.today))">결과 공유하기</button>
     <button class="print-btn" onclick="printResult()">프린트</button>
     <button class="retry-btn" onclick="resetForm('today')">다시 보기</button>
   </div>`;
@@ -727,6 +836,7 @@ function renderTodayResult(data) {
     document.getElementById('todayResult').innerHTML = h;
     document.getElementById('todayResult').scrollIntoView({ behavior: 'smooth', block: 'start' });
     animateResultCards('todayResult');
+    animateCountUp('.today-score-num', interp.score);
   } catch (e) {
     console.error('렌더링 오류:', e);
     document.getElementById('todayResult').innerHTML = `<div class="result-card"><p style="text-align:center;color:var(--accent)">결과 표시 중 오류가 발생했습니다</p><button class="retry-btn" onclick="resetForm('today')">다시 시도</button></div>`;
@@ -751,6 +861,7 @@ async function submitCompatibility() {
     const fd1 = getFormData('compat1', 'compat1');
     const fd2 = getFormData('compat2', 'compat2');
     const data = await apiCall('/api/saju/compatibility', { person1: fd1, person2: fd2 });
+    lastResults.compatibility = data;
     saveHistory('compatibility', `${fd1.year}년생 & ${fd2.year}년생`, Date.now());
     renderCompatResult(data);
   } catch(e) {
@@ -795,6 +906,22 @@ function renderCompatResult(data) {
     </div></div>
   </div></div>`;
 
+  // 오행 비교
+  if (saju1.ohengAnalysis && saju2.ohengAnalysis) {
+    h += `<div class="result-card"><h3>오행 비교</h3><div class="oheng-compare">`;
+    ['목','화','토','금','수'].forEach(oh => {
+      const pct1 = saju1.ohengAnalysis.percentages[oh] || 0;
+      const pct2 = saju2.ohengAnalysis.percentages[oh] || 0;
+      const emoji = {'목':'🌳','화':'🔥','토':'⛰️','금':'⚔️','수':'💧'}[oh];
+      h += `<div class="oc-row">
+        <div class="oc-bar-left"><div class="oc-fill" style="width:${Math.max(pct1,8)}%">${pct1}%</div></div>
+        <div class="oc-label">${emoji} ${oh}</div>
+        <div class="oc-bar-right"><div class="oc-fill" style="width:${Math.max(pct2,8)}%">${pct2}%</div></div>
+      </div>`;
+    });
+    h += `</div></div>`;
+  }
+
   // 점수 바
   if (interp.scores) {
     h += `<div class="result-card"><h3>세부 궁합 점수</h3>`;
@@ -816,7 +943,7 @@ function renderCompatResult(data) {
   h += `<div class="result-card" style="background:#fffbeb"><h3>주의할 점</h3><ul style="list-style:none;padding:0">${interp.cautions.map(s=>`<li style="padding:6px 0 6px 16px;position:relative;font-size:0.88rem"><span style="position:absolute;left:0">⚠</span>${esc(s)}</li>`).join('')}</ul></div>`;
   h += `<div class="result-card" style="background:#fafafa"><h3>종합 조언</h3><div class="interp-block"><p>${esc(interp.advice)}</p></div></div>`;
   h += `<div class="result-card action-buttons">
-    <button class="share-btn" onclick="shareResult('사주포털', '궁합 점수 ${esc(String(score))}점 - 사주포털 AI 궁합 분석')">결과 공유하기</button>
+    <button class="share-btn" onclick="shareResult('사주포털', generateResultSummary('compatibility', lastResults.compatibility))">결과 공유하기</button>
     <button class="print-btn" onclick="printResult()">프린트</button>
     <button class="retry-btn" onclick="resetForm('compatibility')">다시 분석하기</button>
   </div>`;
@@ -824,6 +951,7 @@ function renderCompatResult(data) {
     document.getElementById('compatResult').innerHTML = h;
     document.getElementById('compatResult').scrollIntoView({ behavior: 'smooth', block: 'start' });
     animateResultCards('compatResult');
+    animateCountUp('.compat-score-circle .score-num', score);
   } catch (e) {
     console.error('렌더링 오류:', e);
     document.getElementById('compatResult').innerHTML = `<div class="result-card"><p style="text-align:center;color:var(--accent)">결과 표시 중 오류가 발생했습니다</p><button class="retry-btn" onclick="resetForm('compatibility')">다시 시도</button></div>`;
@@ -844,6 +972,7 @@ async function submitNewYear() {
   try {
     const fd = getFormData('newyear', 'newyear');
     const data = await apiCall('/api/saju/newyear', fd);
+    lastResults.newyear = data;
     saveHistory('newyear', `${fd.year}년 ${fd.month}월 ${fd.day}일`, Date.now());
     renderNewYearResult(data);
   } catch(e) {
@@ -1323,7 +1452,7 @@ function renderNewYearResult(data) {
   // 공유/프린트/다시 분석하기 버튼
   const nyTheme = esc(cg.year_theme || '2026 병오년 신년운세');
   h += `<div class="result-card action-buttons">
-    <button class="share-btn" onclick="shareResult('사주포털', '${nyTheme} - 사주포털 AI 신년운세')">결과 공유하기</button>
+    <button class="share-btn" onclick="shareResult('사주포털', generateResultSummary('newyear', lastResults.newyear))">결과 공유하기</button>
     <button class="print-btn" onclick="printResult()">프린트</button>
     <button class="retry-btn" onclick="resetForm('newyear')">다시 분석하기</button>
   </div>`;
@@ -1332,6 +1461,9 @@ function renderNewYearResult(data) {
     document.getElementById('newyearResult').innerHTML = h;
     document.getElementById('newyearResult').scrollIntoView({ behavior: 'smooth', block: 'start' });
     animateResultCards('newyearResult');
+    if (saju.ohengAnalysis && saju.ohengAnalysis.strongest) {
+      setOhengTheme(saju.ohengAnalysis.strongest.name);
+    }
   } catch (e) {
     console.error('렌더링 오류:', e);
     document.getElementById('newyearResult').innerHTML = `<div class="result-card"><p style="text-align:center;color:var(--accent)">결과 표시 중 오류가 발생했습니다</p><button class="retry-btn" onclick="resetForm('newyear')">다시 시도</button></div>`;

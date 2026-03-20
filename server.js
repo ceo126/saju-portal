@@ -65,25 +65,32 @@ const requestCounts = new Map();
 function rateLimit(req, res, next) {
   const ip = req.ip || req.socket?.remoteAddress || 'unknown';
   const now = Date.now();
-  const entry = requestCounts.get(ip);
 
-  if (!entry || now - entry.start > RATE_WINDOW) {
-    requestCounts.set(ip, { start: now, count: 1 });
-    return next();
+  if (!requestCounts.has(ip)) {
+    requestCounts.set(ip, []);
   }
 
-  entry.count++;
-  if (entry.count > RATE_LIMIT) {
+  const timestamps = requestCounts.get(ip);
+  // Remove timestamps older than the window
+  while (timestamps.length > 0 && now - timestamps[0] > RATE_WINDOW) {
+    timestamps.shift();
+  }
+
+  if (timestamps.length >= RATE_LIMIT) {
     return res.status(429).json({ error: '요청이 너무 많습니다. 잠시 후 다시 시도해주세요.' });
   }
+
+  timestamps.push(now);
   next();
 }
 
 // 오래된 rate limit 엔트리 정리 (5분마다)
 setInterval(() => {
   const now = Date.now();
-  for (const [ip, entry] of requestCounts) {
-    if (now - entry.start > RATE_WINDOW * 2) requestCounts.delete(ip);
+  for (const [ip, timestamps] of requestCounts) {
+    if (timestamps.length === 0 || now - timestamps[timestamps.length - 1] > RATE_WINDOW * 2) {
+      requestCounts.delete(ip);
+    }
   }
 }, 5 * 60 * 1000).unref();
 
@@ -93,6 +100,18 @@ if (!process.env.GEMINI_API_KEY) {
   process.exit(1);
 }
 const interpreter = new SajuInterpreter(process.env.GEMINI_API_KEY);
+
+// 사주 엔진 검증
+try {
+  const testResult = sajuEngine.calculate(1990, 1, 15, 12, 'male');
+  if (!testResult || !testResult.dayPillar) {
+    throw new Error('사주 계산 결과가 올바르지 않습니다');
+  }
+  console.log('✅ 사주 엔진 정상 동작 확인');
+} catch (e) {
+  console.error('❌ 사주 엔진 검증 실패:', e.message);
+  process.exit(1);
+}
 
 // 요청 크기 및 Content-Type 검증
 function validateRequest(req, res, next) {
@@ -284,6 +303,15 @@ app.post('/api/saju/newyear', rateLimit, validateBody, async (req, res) => {
     console.error('신년운세 오류:', e);
     errorResponse(res, 500, '신년운세 분석 중 오류가 발생했습니다', e.message);
   }
+});
+
+// 프론트엔드 에러 로깅 엔드포인트
+app.post('/api/log/error', express.json({ limit: '1kb' }), (req, res) => {
+  const { message, source, line } = req.body || {};
+  if (message) {
+    console.error(`[Client Error] ${message} (${source || 'unknown'}:${line || '?'})`);
+  }
+  res.json({ ok: true });
 });
 
 // 404 핸들러

@@ -2414,3 +2414,172 @@ body, .app-header, .result-card, .form-section, .quick-menu, .review-section, .b
 @media (max-width: 360px) {
   .monthly-ganji-grid { grid-template-columns: repeat(4, 1fr); }
 }
+
+/* ===== 사주 기둥 플립 애니메이션 ===== */
+.saju-col, .ny-saju-col {
+  animation: pillarFlip 0.6s ease both;
+}
+.saju-col:nth-child(1), .ny-saju-col:nth-child(1) { animation-delay: 0s; }
+.saju-col:nth-child(2), .ny-saju-col:nth-child(2) { animation-delay: 0.1s; }
+.saju-col:nth-child(3), .ny-saju-col:nth-child(3) { animation-delay: 0.2s; }
+.saju-col:nth-child(4), .ny-saju-col:nth-child(4) { animation-delay: 0.3s; }
+
+@keyframes pillarFlip {
+  0% { opacity: 0; transform: rotateY(90deg) scale(0.8); }
+  60% { transform: rotateY(-5deg) scale(1.02); }
+  100% { opacity: 1; transform: rotateY(0) scale(1); }
+}
+
+/* ===== 궁합 하트 비트 애니메이션 ===== */
+.compat-score-hero .compat-score-title::before {
+  content: '\1F495'; margin-right: 6px;
+  display: inline-block;
+  animation: heartBeat 1.2s ease infinite;
+}
+@keyframes heartBeat {
+  0%, 100% { transform: scale(1); }
+  15% { transform: scale(1.25); }
+  30% { transform: scale(1); }
+  45% { transform: scale(1.15); }
+}
+
+/* ===== 일간 히어로 오행 링 ===== */
+.ilgan-hero .animal-emoji {
+  position: relative;
+  display: inline-block;
+}
+.ilgan-hero .animal-emoji::after {
+  content: '';
+  position: absolute; inset: -8px;
+  border: 2px solid rgba(255,255,255,0.2);
+  border-radius: 50%;
+  animation: ringPulse 2s ease infinite;
+}
+@keyframes ringPulse {
+  0%, 100% { transform: scale(1); opacity: 0.3; }
+  50% { transform: scale(1.15); opacity: 0.6; }
+}
+
+/* ===== 폼 스텝 진행 ===== */
+.form-section .gender-toggle { position: relative; }
+.form-section .gender-toggle::after {
+  content: 'STEP 1'; position: absolute; right: 0; top: -20px;
+  font-size: 0.6rem; color: var(--text-muted); font-weight: 700;
+  letter-spacing: 1px;
+}
+.form-section .form-row:first-of-type { position: relative; }
+.form-section .form-row:first-of-type::after {
+  content: 'STEP 2'; position: absolute; right: 0; top: -20px;
+  font-size: 0.6rem; color: var(--text-muted); font-weight: 700;
+  letter-spacing: 1px;
+}
+
+/* ===== 대운 현재 펄스 ===== */
+.daeun-item.current {
+  animation: currentPulse 2s ease infinite;
+}
+@keyframes currentPulse {
+  0%, 100% { box-shadow: 0 0 0 2px rgba(255,90,95,0.2); }
+  50% { box-shadow: 0 0 0 6px rgba(255,90,95,0.1); }
+}
+
+/* ===== 월별 차트 바 입장 애니메이션 ===== */
+.monthly-bar .bar-fill {
+  animation: barGrow 0.8s ease both;
+}
+.monthly-bar:nth-child(1) .bar-fill { animation-delay: 0s; }
+.monthly-bar:nth-child(2) .bar-fill { animation-delay: 0.05s; }
+.monthly-bar:nth-child(3) .bar-fill { animation-delay: 0.1s; }
+.monthly-bar:nth-child(4) .bar-fill { animation-delay: 0.15s; }
+.monthly-bar:nth-child(5) .bar-fill { animation-delay: 0.2s; }
+.monthly-bar:nth-child(6) .bar-fill { animation-delay: 0.25s; }
+.monthly-bar:nth-child(7) .bar-fill { animation-delay: 0.3s; }
+.monthly-bar:nth-child(8) .bar-fill { animation-delay: 0.35s; }
+.monthly-bar:nth-child(9) .bar-fill { animation-delay: 0.4s; }
+.monthly-bar:nth-child(10) .bar-fill { animation-delay: 0.45s; }
+.monthly-bar:nth-child(11) .bar-fill { animation-delay: 0.5s; }
+.monthly-bar:nth-child(12) .bar-fill { animation-delay: 0.55s; }
+
+@keyframes barGrow {
+  from { width: 0 !important; }
+}
+
+/* ===== 오행 비교 (궁합) ===== */
+.oheng-compare { margin: 12px 0; }
+.oc-row {
+  display: flex; align-items: center; gap: 6px;
+  margin-bottom: 6px;
+}
+.oc-label {
+  width: 48px; text-align: center; flex-shrink: 0;
+  font-size: 0.75rem; font-weight: 700;
+}
+.oc-bar-left, .oc-bar-right {
+  flex: 1; height: 22px; background: #f5f5f5;
+  border-radius: 11px; overflow: hidden;
+}
+.oc-bar-left { direction: rtl; }
+.oc-fill {
+  height: 100%; border-radius: 11px;
+  background: var(--accent);
+  display: flex; align-items: center;
+  font-size: 0.65rem; font-weight: 700; color: #fff;
+  padding: 0 8px; min-width: 28px;
+  transition: width 1s ease;
+}
+.oc-bar-left .oc-fill {
+  background: #4a2c6e; direction: ltr; justify-content: flex-start;
+}
+.oc-bar-right .oc-fill {
+  background: var(--accent); justify-content: flex-end;
+}
+
+/* ===== 온보딩 ===== */
+.onboarding-overlay {
+  position: fixed; inset: 0; z-index: 10001;
+  background: rgba(0,0,0,0.7);
+  display: flex; align-items: center; justify-content: center;
+  padding: 20px;
+  opacity: 0; visibility: hidden;
+  transition: all 0.4s ease;
+}
+.onboarding-overlay.show { opacity: 1; visibility: visible; }
+.onboarding-card {
+  background: #fff; border-radius: 24px;
+  padding: 36px 28px; text-align: center;
+  max-width: 340px; width: 100%;
+  transform: scale(0.9); transition: transform 0.4s ease;
+}
+.onboarding-overlay.show .onboarding-card { transform: scale(1); }
+.onboarding-card .ob-emoji { font-size: 3rem; margin-bottom: 8px; }
+.onboarding-card h3 { font-size: 1.2rem; font-weight: 900; margin-bottom: 8px; }
+.onboarding-card p { font-size: 0.85rem; color: var(--text-secondary); line-height: 1.6; }
+.ob-features {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 8px;
+  margin: 20px 0;
+}
+.ob-feature {
+  padding: 12px 8px; background: #fafafa;
+  border-radius: 12px; font-size: 0.78rem; font-weight: 600;
+}
+.ob-feature span { display: block; font-size: 1.2rem; margin-bottom: 4px; }
+.ob-start-btn {
+  width: 100%; padding: 14px; background: var(--accent); color: #fff;
+  border: none; border-radius: 12px; font-size: 1rem; font-weight: 700;
+  cursor: pointer;
+}
+.ob-start-btn:active { background: var(--accent-dark); }
+
+/* ===== 다크모드 추가 ===== */
+@media (prefers-color-scheme: dark) {
+  .form-section .gender-toggle::after,
+  .form-section .form-row:first-of-type::after { color: #555; }
+  .oc-bar-left, .oc-bar-right { background: #2a2a2a; }
+  .onboarding-card { background: var(--card); }
+  .ob-feature { background: #252525; }
+}
+
+/* 인쇄 숨김 */
+@media print {
+  .onboarding-overlay { display: none !important; }
+}
