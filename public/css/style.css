@@ -756,7 +756,7 @@ body {
 }
 .today-score-num {
   font-size: 3.5rem; font-weight: 900;
-  margin-top: 12px; line-height: 1;
+  margin-top: 12px; line-height: 1.2;
 }
 .today-score-num.high { color: #059669; }
 .today-score-num.mid { color: var(--accent); }

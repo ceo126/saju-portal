@@ -1,4 +1,4 @@
-const CACHE_NAME = 'saju-v2';
+const CACHE_NAME = 'saju-v3';
 
 const STATIC_ASSETS = [
   '/',
@@ -44,13 +44,10 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Static assets: cache first, network fallback
+  // Static assets: stale-while-revalidate (캐시 먼저 반환 + 백그라운드 갱신)
   event.respondWith(
     caches.match(event.request).then((cachedResponse) => {
-      if (cachedResponse) {
-        return cachedResponse;
-      }
-      return fetch(event.request).then((networkResponse) => {
+      const networkFetch = fetch(event.request).then((networkResponse) => {
         if (networkResponse && networkResponse.status === 200 && networkResponse.type === 'basic') {
           const responseToCache = networkResponse.clone();
           caches.open(CACHE_NAME).then((cache) => {
@@ -58,7 +55,8 @@ self.addEventListener('fetch', (event) => {
           });
         }
         return networkResponse;
-      });
+      }).catch(() => cachedResponse);
+      return cachedResponse || networkFetch;
     })
   );
 });

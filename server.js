@@ -44,9 +44,19 @@ setInterval(() => {
   }
 }, 10 * 60 * 1000).unref();
 
-// 방문자 카운터 (인메모리)
+// 방문자 카운터 (인메모리, 일일 초기화)
 let visitorCount = 152380;
-const visitedIPs = new Set();
+let visitedIPs = new Set();
+let visitedIPsDate = new Date().toDateString();
+
+// 매일 IP 세트 초기화 (메모리 누수 방지)
+setInterval(() => {
+  const today = new Date().toDateString();
+  if (today !== visitedIPsDate) {
+    visitedIPs = new Set();
+    visitedIPsDate = today;
+  }
+}, 60 * 60 * 1000).unref();
 
 app.get('/api/visitors', (req, res) => {
   const ip = req.ip || req.socket?.remoteAddress || 'unknown';
