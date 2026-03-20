@@ -13,7 +13,7 @@ const RATE_WINDOW = 60 * 1000; // 1분
 const requestCounts = new Map();
 
 function rateLimit(req, res, next) {
-  const ip = req.ip || req.connection.remoteAddress;
+  const ip = req.ip || req.socket?.remoteAddress || 'unknown';
   const now = Date.now();
   const entry = requestCounts.get(ip);
 
@@ -43,6 +43,15 @@ if (!process.env.GEMINI_API_KEY) {
   process.exit(1);
 }
 const interpreter = new SajuInterpreter(process.env.GEMINI_API_KEY);
+
+// 보안 헤더
+app.use((req, res, next) => {
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-Frame-Options', 'DENY');
+  res.setHeader('X-XSS-Protection', '1; mode=block');
+  res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+  next();
+});
 
 app.use(express.json({ limit: '100kb' }));
 app.use(express.static(path.join(__dirname, 'public')));
@@ -149,6 +158,18 @@ process.on('unhandledRejection', (err) => {
   console.error('미처리 Promise 거부:', err);
 });
 
-app.listen(PORT, () => {
+const server = app.listen(PORT, () => {
   console.log(`\n✨ 사주포털 서버 시작: http://localhost:${PORT}\n`);
 });
+
+// Graceful shutdown
+function shutdown() {
+  console.log('\n서버 종료 중...');
+  server.close(() => {
+    console.log('서버 종료 완료');
+    process.exit(0);
+  });
+  setTimeout(() => process.exit(1), 5000);
+}
+process.on('SIGTERM', shutdown);
+process.on('SIGINT', shutdown);
