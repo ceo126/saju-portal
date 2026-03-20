@@ -1906,3 +1906,272 @@ body {
 @media print {
   .faq-section, .year-presets { display: none !important; }
 }
+
+/* ============================================
+   디자인 개선 - 스켈레톤, 인터랙션, UI 향상
+   ============================================ */
+
+/* ===== 1. 스켈레톤 로딩 ===== */
+.skeleton {
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: var(--radius-xs);
+}
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+.skeleton-line { height: 14px; margin-bottom: 10px; border-radius: 7px; }
+.skeleton-line.short { width: 60%; }
+.skeleton-line.medium { width: 80%; }
+.skeleton-title { height: 22px; width: 40%; margin-bottom: 16px; border-radius: 11px; }
+.skeleton-circle { width: 80px; height: 80px; border-radius: 50%; margin: 0 auto 16px; }
+.skeleton-card {
+  background: #fff; padding: 24px 20px; margin-top: 8px;
+}
+
+/* ===== 2. 마이크로 인터랙션 ===== */
+
+/* 버튼 호버/프레스 효과 */
+.submit-btn { transition: all 0.2s ease; transform: translateY(0); }
+.submit-btn:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(255,90,95,0.3); }
+.submit-btn:active:not(:disabled) { transform: translateY(1px); box-shadow: none; }
+
+.product-card { transition: transform 0.2s ease, box-shadow 0.2s ease; }
+.product-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-lg); }
+
+.quick-menu-item { transition: all 0.15s ease; }
+.quick-menu-item:hover { background: #fafafa; }
+
+.tab-item { transition: color 0.2s ease; }
+.tab-item:hover:not(.active) { color: var(--text-primary); }
+
+/* 인풋 포커스 애니메이션 */
+.form-group input, .form-group select {
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+.form-group input:focus, .form-group select:focus {
+  box-shadow: 0 0 0 3px rgba(25,25,25,0.08);
+}
+
+/* 성별 버튼 전환 */
+.gender-btn { transition: all 0.2s ease; }
+.gender-btn:hover:not(.active) { border-color: #ccc; }
+
+/* 카드 등장 */
+.result-card { animation: slideUp 0.4s ease both; }
+
+/* 점수 카운트업 애니메이션 */
+.score-animate {
+  animation: countPulse 0.6s ease;
+}
+@keyframes countPulse {
+  0% { transform: scale(0.5); opacity: 0; }
+  50% { transform: scale(1.1); }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+/* 궁합 점수 원형 프로그레스 */
+.compat-score-circle {
+  position: relative;
+  width: 140px; height: 140px;
+  margin: 0 auto;
+}
+.compat-score-circle svg { transform: rotate(-90deg); }
+.compat-score-circle .score-text {
+  position: absolute; inset: 0;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+}
+.compat-score-circle .score-num {
+  font-size: 2.8rem; font-weight: 900; color: var(--accent); line-height: 1;
+}
+.compat-score-circle .score-unit {
+  font-size: 0.85rem; color: var(--text-secondary); margin-top: 2px;
+}
+
+/* 원형 프로그레스 애니메이션 */
+@keyframes circleProgress {
+  from { stroke-dashoffset: 408; }
+}
+
+/* ===== 3. 진행률 로딩 바 ===== */
+.progress-bar {
+  position: fixed; top: 0; left: 0; z-index: 9999;
+  width: 0; height: 3px;
+  background: linear-gradient(90deg, var(--accent), #ff8a8e);
+  transition: width 0.4s ease;
+  box-shadow: 0 0 8px rgba(255,90,95,0.4);
+}
+.progress-bar.active { width: 70%; }
+.progress-bar.done { width: 100%; transition: width 0.2s ease; }
+.progress-bar.hide { opacity: 0; transition: opacity 0.3s ease 0.2s; }
+
+/* ===== 4. 맨 위로 버튼 ===== */
+.scroll-top-btn {
+  position: fixed; bottom: 24px; right: 16px;
+  width: 44px; height: 44px;
+  background: var(--accent); color: #fff;
+  border: none; border-radius: 50%;
+  font-size: 1.2rem; cursor: pointer;
+  box-shadow: 0 2px 12px rgba(255,90,95,0.3);
+  opacity: 0; visibility: hidden;
+  transition: all 0.3s ease;
+  z-index: 90;
+  display: flex; align-items: center; justify-content: center;
+}
+.scroll-top-btn.show { opacity: 1; visibility: visible; }
+.scroll-top-btn:active { transform: scale(0.9); }
+
+/* ===== 5. 결과 섹션 접기/펼치기 ===== */
+.result-card h3 { cursor: pointer; display: flex; justify-content: space-between; align-items: center; }
+.result-card h3 .collapse-icon {
+  font-size: 0.7rem; color: var(--text-muted);
+  transition: transform 0.3s ease;
+}
+.result-card.collapsed h3 .collapse-icon { transform: rotate(180deg); }
+.result-card .collapsible-content {
+  max-height: 2000px; overflow: hidden;
+  transition: max-height 0.4s ease, opacity 0.3s ease;
+  opacity: 1;
+}
+.result-card.collapsed .collapsible-content {
+  max-height: 0; opacity: 0;
+}
+
+/* ===== 6. 사주 용어 툴팁 ===== */
+.saju-tooltip {
+  position: relative; cursor: help;
+  border-bottom: 1px dotted var(--text-muted);
+}
+.saju-tooltip::after {
+  content: attr(data-tooltip);
+  position: absolute; bottom: 100%; left: 50%;
+  transform: translateX(-50%) translateY(-4px);
+  background: #333; color: #fff;
+  padding: 6px 12px; border-radius: 6px;
+  font-size: 0.72rem; font-weight: 400;
+  white-space: nowrap; z-index: 100;
+  opacity: 0; visibility: hidden;
+  transition: all 0.2s ease;
+  pointer-events: none;
+}
+.saju-tooltip:hover::after { opacity: 1; visibility: visible; }
+
+/* ===== 7. 페이지 전환 개선 ===== */
+.page { transition: opacity 0.25s ease; }
+.page.active { animation: pageFadeIn 0.3s ease; }
+@keyframes pageFadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* ===== 8. 리뷰 카드 호버 ===== */
+.review-card { transition: background 0.2s ease; }
+.review-product-link { transition: all 0.2s ease; }
+.review-product-link:hover { background: #f0f0f0; }
+
+/* ===== 9. 오행 바 차트 호버 ===== */
+.oheng-row .oh-bar { transition: width 1s ease, filter 0.2s ease; }
+.oheng-row:hover .oh-bar { filter: brightness(1.1); }
+.monthly-bar .bar-fill { transition: width 1s ease, filter 0.2s ease; }
+.monthly-bar:hover .bar-fill { filter: brightness(1.1); }
+
+/* ===== 10. 히어로 텍스트 애니메이션 ===== */
+.hero-title { animation: heroFadeIn 0.8s ease 0.3s both; }
+.hero-subtitle { animation: heroFadeIn 0.8s ease 0.5s both; }
+.hero-cta { animation: heroFadeIn 0.8s ease 0.7s both; }
+@keyframes heroFadeIn {
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* ===== 11. 다크모드: 신규 디자인 요소 ===== */
+@media (prefers-color-scheme: dark) {
+  .skeleton { background: linear-gradient(90deg, #2a2a2a 25%, #333 50%, #2a2a2a 75%); background-size: 200% 100%; }
+  .skeleton-card { background: var(--card); }
+  .scroll-top-btn { box-shadow: 0 2px 12px rgba(0,0,0,0.4); }
+  .saju-tooltip::after { background: #e8e8e8; color: #121212; }
+  .review-product-link:hover { background: #2a2a2a; }
+  .form-group input:focus, .form-group select:focus { box-shadow: 0 0 0 3px rgba(255,107,111,0.15); }
+  .quick-menu-item:hover { background: #252525; }
+}
+
+/* ===== 12. 인쇄: 신규 디자인 요소 ===== */
+@media print {
+  .scroll-top-btn, .progress-bar, .saju-tooltip::after { display: none !important; }
+  .result-card.collapsed .collapsible-content { max-height: none; opacity: 1; }
+}
+
+/* ===== 13. 소형 화면 조정 (360px 이하) ===== */
+@media (max-width: 360px) {
+  .unsung-grid { gap: 4px; }
+  .unsung-item { min-width: 60px; padding: 10px 4px; }
+  .daeun-item { min-width: 56px; padding: 10px 6px; }
+  .year-presets { gap: 4px; }
+  .year-preset-btn { padding: 6px 10px; font-size: 0.72rem; }
+}
+
+/* ===== 일주 특성 (히어로 내) ===== */
+.ilju-special {
+  margin-top: 12px; font-size: 0.88rem;
+  color: rgba(255,255,255,0.95); font-weight: 600;
+}
+.ilju-special .ilju-label {
+  display: inline-block; background: rgba(255,255,255,0.15);
+  padding: 3px 10px; border-radius: 12px;
+  font-size: 0.72rem; font-weight: 700; margin-right: 6px;
+}
+.ilju-trait {
+  font-size: 0.78rem; color: rgba(255,255,255,0.7);
+  margin-top: 6px; max-width: 320px; margin-left: auto; margin-right: auto;
+  line-height: 1.5;
+}
+
+/* ===== 오행 보충 가이드 ===== */
+.oheng-guide-card {
+  background: linear-gradient(135deg, #f8f9ff 0%, #fff5f5 100%);
+  border-radius: var(--radius-sm); padding: 18px;
+  margin-bottom: 12px; border: 1px solid var(--border);
+}
+.oheng-guide-card .og-header {
+  font-size: 0.95rem; font-weight: 800; margin-bottom: 12px;
+  color: var(--text-primary);
+}
+.oheng-guide-card .og-oheng {
+  display: inline-block; background: var(--accent);
+  color: #fff; padding: 2px 10px; border-radius: 10px;
+  font-size: 0.8rem; margin-right: 4px;
+}
+.og-grid {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 8px;
+}
+.og-item {
+  display: flex; flex-direction: column; gap: 2px;
+}
+.og-item .og-label {
+  font-size: 0.68rem; color: var(--text-muted); font-weight: 700;
+}
+.og-item .og-value {
+  font-size: 0.8rem; color: var(--text-primary); font-weight: 500;
+  line-height: 1.4;
+}
+
+/* 액션 버튼 그룹 */
+.action-buttons {
+  display: flex; flex-direction: column; gap: 8px;
+}
+
+/* 다크모드: 신규 */
+@media (prefers-color-scheme: dark) {
+  .oheng-guide-card {
+    background: linear-gradient(135deg, #1a1a2e 0%, #2a1a1a 100%);
+    border-color: var(--border);
+  }
+}
+
+/* 인쇄 */
+@media print {
+  .oheng-guide-card { background: #fff !important; }
+}

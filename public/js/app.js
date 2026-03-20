@@ -140,6 +140,7 @@ window.addEventListener('load', () => {
     }).catch(() => {});
   }, 800);
   restoreFormData();
+  setupRealtimeValidation();
   // Service Worker 등록
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('/sw.js').catch(() => {});
@@ -150,7 +151,9 @@ window.addEventListener('load', () => {
 function openPage(page) {
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('.tab-item').forEach(t => {
-    t.classList.toggle('active', t.dataset.page === page);
+    const isActive = t.dataset.page === page;
+    t.classList.toggle('active', isActive);
+    t.setAttribute('aria-selected', String(isActive));
   });
 
   const pageMap = { home:'pageHome', basic:'pageBasic', today:'pageToday', compatibility:'pageCompatibility', newyear:'pageNewyear' };
@@ -169,8 +172,12 @@ function goHome() { openPage('home'); }
 
 // ===== 성별 =====
 function selectGender(btn, formType) {
-  btn.parentElement.querySelectorAll('.gender-btn').forEach(b => b.classList.remove('active'));
+  btn.parentElement.querySelectorAll('.gender-btn').forEach(b => {
+    b.classList.remove('active');
+    b.setAttribute('aria-checked', 'false');
+  });
   btn.classList.add('active');
+  btn.setAttribute('aria-checked', 'true');
   state.genders[formType] = btn.dataset.gender;
 }
 
@@ -196,12 +203,50 @@ function showError(id, msg) {
 function showAnalyzing(targetId) {
   const el = document.getElementById(targetId);
   el.innerHTML = `
-    <div class="analyzing">
-      <div class="an-spinner"></div>
-      <p>사주를 분석하고 있습니다<span class="dots"></span></p>
-      <p style="font-size:0.78rem;color:var(--text-muted);margin-top:6px">AI가 정성껏 풀어드리는 중...</p>
+    <div class="skeleton-card">
+      <div class="skeleton skeleton-circle"></div>
+      <div class="skeleton skeleton-title" style="margin:0 auto"></div>
+      <div class="skeleton skeleton-line medium" style="margin:8px auto 0"></div>
+    </div>
+    <div class="skeleton-card">
+      <div class="skeleton skeleton-title"></div>
+      <div class="skeleton skeleton-line"></div>
+      <div class="skeleton skeleton-line medium"></div>
+      <div class="skeleton skeleton-line short"></div>
+    </div>
+    <div class="skeleton-card">
+      <div class="skeleton skeleton-title"></div>
+      <div class="skeleton skeleton-line"></div>
+      <div class="skeleton skeleton-line"></div>
+      <div class="skeleton skeleton-line medium"></div>
+      <div class="skeleton skeleton-line short"></div>
+    </div>
+    <div class="analyzing" style="background:transparent;padding:16px 20px">
+      <p style="font-size:0.82rem;color:var(--text-secondary)">AI가 사주를 분석하고 있습니다<span class="dots"></span></p>
     </div>`;
   el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+
+// ===== 프로그레스 바 =====
+function showProgress() {
+  let bar = document.getElementById('progressBar');
+  if (!bar) {
+    bar = document.createElement('div');
+    bar.id = 'progressBar';
+    bar.className = 'progress-bar';
+    document.body.prepend(bar);
+  }
+  bar.className = 'progress-bar active';
+}
+
+function hideProgress() {
+  const bar = document.getElementById('progressBar');
+  if (bar) {
+    bar.classList.remove('active');
+    bar.classList.add('done');
+    setTimeout(() => bar.classList.add('hide'), 200);
+    setTimeout(() => bar.remove(), 600);
+  }
 }
 
 // ===== 버튼 비활성화 (중복 요청 방지) =====
@@ -250,6 +295,7 @@ async function submitBasic() {
   document.getElementById('basicForm').style.display = 'none';
   document.getElementById('basicFormHeader').style.display = 'none';
   showAnalyzing('basicResult');
+  showProgress();
   setSubmitButtons(true);
   try {
     const fd = getFormData('basic', 'basic');
@@ -259,6 +305,7 @@ async function submitBasic() {
   } catch(e) {
     document.getElementById('basicResult').innerHTML = `<div class="result-card"><p style="text-align:center;color:var(--accent)">${esc(e.message)}</p><button class="retry-btn" onclick="resetForm('basic')">다시 시도</button></div>`;
   } finally {
+    hideProgress();
     setSubmitButtons(false);
   }
 }
@@ -380,6 +427,7 @@ function renderBasicResult(data) {
     <div class="ilgan-name">${esc(saju.personality.title)} · ${esc(saju.ilgan)}일간</div>
     <div class="ilgan-sub">${esc(saju.animal)}띠 · ${esc(interp.summary || saju.personality.desc)}</div>
     <div class="ilgan-trait">${esc(saju.personality.trait)}</div>
+    ${saju.iljuSpecial ? `<div class="ilju-special"><span class="ilju-label">${esc(saju.dayPillar.ganji)}일주</span> ${esc(saju.iljuSpecial.title)}</div><div class="ilju-trait">${esc(saju.iljuSpecial.trait)}</div>` : ''}
   </div>`;
 
   // 사주팔자
@@ -494,6 +542,26 @@ function renderBasicResult(data) {
   if (interp.life_advice) {
     h += `<div class="result-card" style="background:#fafafa"><h3>인생 종합 조언</h3><div class="interp-block"><p>${esc(interp.life_advice)}</p></div></div>`;
   }
+  // 오행 보충 가이드
+  if (saju.ohengGuide && saju.ohengGuide.length > 0) {
+    h += `<div class="result-card"><h3>오행 보충 가이드</h3><p style="font-size:0.8rem;color:var(--text-secondary);margin-bottom:14px">부족한 오행을 보충하는 방법입니다</p>`;
+    saju.ohengGuide.forEach(g => {
+      h += `<div class="oheng-guide-card">
+        <div class="og-header"><span class="og-oheng">${esc(g.oheng)}</span> 보충법</div>
+        <div class="og-grid">
+          <div class="og-item"><span class="og-label">색상</span><span class="og-value">${g.color.map(c => esc(c)).join(', ')}</span></div>
+          <div class="og-item"><span class="og-label">방향</span><span class="og-value">${esc(g.direction)}</span></div>
+          <div class="og-item"><span class="og-label">계절</span><span class="og-value">${esc(g.season)}</span></div>
+          <div class="og-item"><span class="og-label">숫자</span><span class="og-value">${g.number.join(', ')}</span></div>
+          <div class="og-item"><span class="og-label">음식</span><span class="og-value">${g.food.map(f => esc(f)).join(', ')}</span></div>
+          <div class="og-item"><span class="og-label">활동</span><span class="og-value">${g.activity.map(a => esc(a)).join(', ')}</span></div>
+          <div class="og-item"><span class="og-label">아이템</span><span class="og-value">${g.item.map(t => esc(t)).join(', ')}</span></div>
+          <div class="og-item"><span class="og-label">관련 신체</span><span class="og-value">${esc(g.body)}</span></div>
+        </div>
+      </div>`;
+    });
+    h += `</div>`;
+  }
   h += `<div class="result-card action-buttons">
     <button class="share-btn" onclick="shareResult('사주포털', '${esc(saju.personality.title)} - 사주포털 AI 종합 사주 분석 결과')">결과 공유하기</button>
     <button class="print-btn" onclick="printResult()">프린트</button>
@@ -513,6 +581,7 @@ async function submitToday() {
   document.getElementById('todayForm').style.display = 'none';
   document.getElementById('todayFormHeader').style.display = 'none';
   showAnalyzing('todayResult');
+  showProgress();
   setSubmitButtons(true);
   try {
     const fd = getFormData('today', 'today');
@@ -522,6 +591,7 @@ async function submitToday() {
   } catch(e) {
     document.getElementById('todayResult').innerHTML = `<div class="result-card"><p style="text-align:center;color:var(--accent)">${esc(e.message)}</p><button class="retry-btn" onclick="resetForm('today')">다시 시도</button></div>`;
   } finally {
+    hideProgress();
     setSubmitButtons(false);
   }
 }
@@ -575,6 +645,7 @@ async function submitCompatibility() {
   document.getElementById('compatForm').style.display = 'none';
   document.getElementById('compatFormHeader').style.display = 'none';
   showAnalyzing('compatResult');
+  showProgress();
   setSubmitButtons(true);
   try {
     const fd1 = getFormData('compat1', 'compat1');
@@ -585,6 +656,7 @@ async function submitCompatibility() {
   } catch(e) {
     document.getElementById('compatResult').innerHTML = `<div class="result-card"><p style="text-align:center;color:var(--accent)">${esc(e.message)}</p><button class="retry-btn" onclick="resetForm('compatibility')">다시 시도</button></div>`;
   } finally {
+    hideProgress();
     setSubmitButtons(false);
   }
 }
@@ -596,8 +668,19 @@ function renderCompatResult(data) {
   let h = '';
 
   h += `<div class="compat-score-hero">
-    <div class="compat-score-num">${score}<span style="font-size:1.5rem">점</span></div>
-    <div class="compat-score-title">${esc(interp.title || '인연의 만남')}</div>
+    <div class="compat-score-circle">
+      <svg width="140" height="140" viewBox="0 0 140 140">
+        <circle cx="70" cy="70" r="65" fill="none" stroke="#f0f0f0" stroke-width="6"/>
+        <circle cx="70" cy="70" r="65" fill="none" stroke="var(--accent)" stroke-width="6"
+          stroke-dasharray="408" stroke-dashoffset="${408 - (408 * score / 100)}"
+          stroke-linecap="round" style="animation: circleProgress 1.5s ease forwards"/>
+      </svg>
+      <div class="score-text">
+        <div class="score-num score-animate">${score}</div>
+        <div class="score-unit">점</div>
+      </div>
+    </div>
+    <div class="compat-score-title" style="margin-top:12px">${esc(interp.title || '인연의 만남')}</div>
   </div>`;
 
   // 사주 비교
@@ -650,6 +733,7 @@ async function submitNewYear() {
   document.getElementById('newyearForm').style.display = 'none';
   document.getElementById('newyearFormHeader').style.display = 'none';
   showAnalyzing('newyearResult');
+  showProgress();
   setSubmitButtons(true);
   try {
     const fd = getFormData('newyear', 'newyear');
@@ -659,6 +743,7 @@ async function submitNewYear() {
   } catch(e) {
     document.getElementById('newyearResult').innerHTML = `<div class="result-card"><p style="text-align:center;color:var(--accent)">${esc(e.message)}</p><button class="retry-btn" onclick="resetForm('newyear')">다시 시도</button></div>`;
   } finally {
+    hideProgress();
     setSubmitButtons(false);
   }
 }
@@ -1153,3 +1238,56 @@ function setYearPreset(btn, decade) {
 function toggleFaq(item) {
   item.classList.toggle('open');
 }
+
+// ===== 결과 섹션 접기/펼치기 =====
+function toggleResultSection(el) {
+  const card = el.closest('.result-card');
+  if (card) card.classList.toggle('collapsed');
+}
+
+// ===== 실시간 폼 유효성 검사 =====
+function setupRealtimeValidation() {
+  document.querySelectorAll('input[type="number"]').forEach(input => {
+    input.addEventListener('input', function() {
+      if (this.id.includes('Year')) {
+        const val = parseInt(this.value);
+        if (this.value && (val < 1920 || val > 2030)) {
+          this.style.borderColor = 'var(--accent)';
+        } else {
+          this.style.borderColor = '';
+        }
+      }
+      if (this.id.includes('Day')) {
+        const val = parseInt(this.value);
+        if (this.value && (val < 1 || val > 31)) {
+          this.style.borderColor = 'var(--accent)';
+        } else {
+          this.style.borderColor = '';
+        }
+      }
+    });
+  });
+}
+
+// ===== Enter키로 폼 제출 =====
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter' && !state.loading) {
+    const page = state.currentPage;
+    if (page === 'basic') submitBasic();
+    else if (page === 'today') submitToday();
+    else if (page === 'compatibility') submitCompatibility();
+    else if (page === 'newyear') submitNewYear();
+  }
+});
+
+// ===== 맨 위로 버튼 =====
+(function() {
+  const btn = document.getElementById('scrollTopBtn');
+  if (!btn) return;
+  window.addEventListener('scroll', () => {
+    btn.classList.toggle('show', window.scrollY > 400);
+  }, { passive: true });
+  btn.addEventListener('click', () => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  });
+})();

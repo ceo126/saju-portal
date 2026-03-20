@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <meta name="theme-color" content="#ffffff">
+  <meta name="theme-color" content="#1a0a2e" media="(prefers-color-scheme: dark)">
   <meta name="description" content="AI가 분석하는 정확한 사주팔자 - 무료 사주, 궁합, 오늘의 운세, 2026 신년운세">
   <meta property="og:title" content="사주포털 - AI 사주팔자">
   <meta property="og:description" content="AI가 분석하는 정확한 사주팔자 - 무료 사주, 궁합, 오늘의 운세, 2026 신년운세">
@@ -17,7 +18,7 @@
 <body>
 
   <!-- 로딩 -->
-  <div class="loading-screen" id="loadingScreen">
+  <div class="loading-screen" id="loadingScreen" role="status" aria-label="로딩 중">
     <div class="loading-logo">사주포털</div>
     <div class="loading-spinner"></div>
   </div>
@@ -28,12 +29,12 @@
     <div class="header-top">
       <div class="header-logo" id="headerLogo">사주포털</div>
     </div>
-    <nav class="tab-nav" id="tabNav">
-      <button class="tab-item active" data-page="home" onclick="openPage('home')">홈</button>
-      <button class="tab-item" data-page="basic" onclick="openPage('basic')">사주</button>
-      <button class="tab-item" data-page="compatibility" onclick="openPage('compatibility')">궁합</button>
-      <button class="tab-item" data-page="newyear" onclick="openPage('newyear')">신년</button>
-      <button class="tab-item" data-page="today" onclick="openPage('today')">오늘</button>
+    <nav class="tab-nav" id="tabNav" role="tablist">
+      <button class="tab-item active" data-page="home" onclick="openPage('home')" role="tab" aria-selected="true">홈</button>
+      <button class="tab-item" data-page="basic" onclick="openPage('basic')" role="tab" aria-selected="false">사주</button>
+      <button class="tab-item" data-page="compatibility" onclick="openPage('compatibility')" role="tab" aria-selected="false">궁합</button>
+      <button class="tab-item" data-page="newyear" onclick="openPage('newyear')" role="tab" aria-selected="false">신년</button>
+      <button class="tab-item" data-page="today" onclick="openPage('today')" role="tab" aria-selected="false">오늘</button>
     </nav>
   </header>
 
@@ -319,10 +320,10 @@
       <h2>종합 사주풀이</h2>
       <p>사주팔자로 보는 당신의 모든 것</p>
     </div>
-    <div class="form-section" id="basicForm">
+    <div class="form-section" id="basicForm" role="form">
       <div class="gender-toggle">
-        <button class="gender-btn active" data-gender="male" onclick="selectGender(this,'basic')">남성</button>
-        <button class="gender-btn" data-gender="female" onclick="selectGender(this,'basic')">여성</button>
+        <button class="gender-btn active" data-gender="male" onclick="selectGender(this,'basic')" role="radio" aria-checked="true">남성</button>
+        <button class="gender-btn" data-gender="female" onclick="selectGender(this,'basic')" role="radio" aria-checked="false">여성</button>
       </div>
       <div class="year-presets" data-target="basicYear">
         <button class="year-preset-btn" onclick="setYearPreset(this, 1960)">60년대</button>
@@ -352,9 +353,9 @@
         </div>
       </div>
       <div class="error-msg" id="basicError"></div>
-      <button class="submit-btn" onclick="submitBasic()">내 사주 보기</button>
+      <button class="submit-btn" onclick="submitBasic()" aria-label="종합 사주 분석 시작">내 사주 보기</button>
     </div>
-    <div id="basicResult"></div>
+    <div id="basicResult" role="region" aria-live="polite"></div>
   </div>
 
   <!-- ========== 오늘의 운세 ========== -->
@@ -363,10 +364,10 @@
       <h2>오늘의 운세</h2>
       <p>오늘 하루 행운 가이드</p>
     </div>
-    <div class="form-section" id="todayForm">
+    <div class="form-section" id="todayForm" role="form">
       <div class="gender-toggle">
-        <button class="gender-btn active" data-gender="male" onclick="selectGender(this,'today')">남성</button>
-        <button class="gender-btn" data-gender="female" onclick="selectGender(this,'today')">여성</button>
+        <button class="gender-btn active" data-gender="male" onclick="selectGender(this,'today')" role="radio" aria-checked="true">남성</button>
+        <button class="gender-btn" data-gender="female" onclick="selectGender(this,'today')" role="radio" aria-checked="false">여성</button>
       </div>
       <div class="year-presets" data-target="todayYear">
         <button class="year-preset-btn" onclick="setYearPreset(this, 1960)">60년대</button>
@@ -384,9 +385,9 @@
         <div class="form-group"><label>태어난 시간</label><select id="todayHour"><option value="-1">모름</option><option value="0">자시 (23:30~01:30)</option><option value="1">축시 (01:30~03:30)</option><option value="3">인시 (03:30~05:30)</option><option value="5">묘시 (05:30~07:30)</option><option value="7">진시 (07:30~09:30)</option><option value="9">사시 (09:30~11:30)</option><option value="11">오시 (11:30~13:30)</option><option value="13">미시 (13:30~15:30)</option><option value="15">신시 (15:30~17:30)</option><option value="17">유시 (17:30~19:30)</option><option value="19">술시 (19:30~21:30)</option><option value="21">해시 (21:30~23:30)</option></select></div>
       </div>
       <div class="error-msg" id="todayError"></div>
-      <button class="submit-btn" onclick="submitToday()">오늘의 운세 보기</button>
+      <button class="submit-btn" onclick="submitToday()" aria-label="오늘의 운세 분석 시작">오늘의 운세 보기</button>
     </div>
-    <div id="todayResult"></div>
+    <div id="todayResult" role="region" aria-live="polite"></div>
   </div>
 
   <!-- ========== 궁합 ========== -->
@@ -395,11 +396,11 @@
       <h2>사주 궁합</h2>
       <p>두 사람의 인연을 분석합니다</p>
     </div>
-    <div class="form-section" id="compatForm">
+    <div class="form-section" id="compatForm" role="form">
       <div class="section-label">첫 번째 사람</div>
       <div class="gender-toggle">
-        <button class="gender-btn active" data-gender="male" onclick="selectGender(this,'compat1')">남성</button>
-        <button class="gender-btn" data-gender="female" onclick="selectGender(this,'compat1')">여성</button>
+        <button class="gender-btn active" data-gender="male" onclick="selectGender(this,'compat1')" role="radio" aria-checked="true">남성</button>
+        <button class="gender-btn" data-gender="female" onclick="selectGender(this,'compat1')" role="radio" aria-checked="false">여성</button>
       </div>
       <div class="year-presets" data-target="compat1Year">
         <button class="year-preset-btn" onclick="setYearPreset(this, 1960)">60년대</button>
@@ -419,8 +420,8 @@
       <div class="person-divider"><div class="line"></div><span class="heart">♥</span><div class="line"></div></div>
       <div class="section-label">두 번째 사람</div>
       <div class="gender-toggle">
-        <button class="gender-btn" data-gender="male" onclick="selectGender(this,'compat2')">남성</button>
-        <button class="gender-btn active" data-gender="female" onclick="selectGender(this,'compat2')">여성</button>
+        <button class="gender-btn" data-gender="male" onclick="selectGender(this,'compat2')" role="radio" aria-checked="false">남성</button>
+        <button class="gender-btn active" data-gender="female" onclick="selectGender(this,'compat2')" role="radio" aria-checked="true">여성</button>
       </div>
       <div class="year-presets" data-target="compat2Year">
         <button class="year-preset-btn" onclick="setYearPreset(this, 1960)">60년대</button>
@@ -438,9 +439,9 @@
         <div class="form-group"><label>태어난 시간</label><select id="compat2Hour"><option value="-1">모름</option><option value="0">자시</option><option value="1">축시</option><option value="3">인시</option><option value="5">묘시</option><option value="7">진시</option><option value="9">사시</option><option value="11">오시</option><option value="13">미시</option><option value="15">신시</option><option value="17">유시</option><option value="19">술시</option><option value="21">해시</option></select></div>
       </div>
       <div class="error-msg" id="compatError"></div>
-      <button class="submit-btn" onclick="submitCompatibility()">궁합 보기</button>
+      <button class="submit-btn" onclick="submitCompatibility()" aria-label="사주 궁합 분석 시작">궁합 보기</button>
     </div>
-    <div id="compatResult"></div>
+    <div id="compatResult" role="region" aria-live="polite"></div>
   </div>
 
   <!-- ========== 신년운세 ========== -->
@@ -449,10 +450,10 @@
       <h2>2026 신년운세</h2>
       <p>병오년 월별 상세 운세</p>
     </div>
-    <div class="form-section" id="newyearForm">
+    <div class="form-section" id="newyearForm" role="form">
       <div class="gender-toggle">
-        <button class="gender-btn active" data-gender="male" onclick="selectGender(this,'newyear')">남성</button>
-        <button class="gender-btn" data-gender="female" onclick="selectGender(this,'newyear')">여성</button>
+        <button class="gender-btn active" data-gender="male" onclick="selectGender(this,'newyear')" role="radio" aria-checked="true">남성</button>
+        <button class="gender-btn" data-gender="female" onclick="selectGender(this,'newyear')" role="radio" aria-checked="false">여성</button>
       </div>
       <div class="year-presets" data-target="newyearYear">
         <button class="year-preset-btn" onclick="setYearPreset(this, 1960)">60년대</button>
@@ -470,12 +471,13 @@
         <div class="form-group"><label>태어난 시간</label><select id="newyearHour"><option value="-1">모름</option><option value="0">자시</option><option value="1">축시</option><option value="3">인시</option><option value="5">묘시</option><option value="7">진시</option><option value="9">사시</option><option value="11">오시</option><option value="13">미시</option><option value="15">신시</option><option value="17">유시</option><option value="19">술시</option><option value="21">해시</option></select></div>
       </div>
       <div class="error-msg" id="newyearError"></div>
-      <button class="submit-btn" onclick="submitNewYear()">2026 신년운세 보기</button>
+      <button class="submit-btn" onclick="submitNewYear()" aria-label="2026 신년운세 분석 시작">2026 신년운세 보기</button>
     </div>
-    <div id="newyearResult"></div>
+    <div id="newyearResult" role="region" aria-live="polite"></div>
   </div>
 
   <div class="toast" id="toast"></div>
+  <button class="scroll-top-btn" id="scrollTopBtn" aria-label="맨 위로 스크롤">↑</button>
   <script src="/js/app.js"></script>
 </body>
 </html>

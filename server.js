@@ -26,7 +26,13 @@ function getCachedResponse(key) {
   return entry.data;
 }
 
+const MAX_CACHE_SIZE = 500;
 function setCachedResponse(key, data) {
+  if (responseCache.size >= MAX_CACHE_SIZE) {
+    // Remove oldest entry
+    const firstKey = responseCache.keys().next().value;
+    responseCache.delete(firstKey);
+  }
   responseCache.set(key, { data, timestamp: Date.now() });
 }
 
@@ -88,6 +94,22 @@ if (!process.env.GEMINI_API_KEY) {
 }
 const interpreter = new SajuInterpreter(process.env.GEMINI_API_KEY);
 
+// 요청 크기 및 Content-Type 검증
+function validateRequest(req, res, next) {
+  if (req.method === 'POST' && !req.is('application/json')) {
+    return res.status(415).json({ error: 'Content-Type은 application/json이어야 합니다' });
+  }
+  next();
+}
+app.use(validateRequest);
+
+// 구조화된 에러 응답 헬퍼
+function errorResponse(res, status, message, details = null) {
+  const response = { error: message, timestamp: new Date().toISOString() };
+  if (details && process.env.NODE_ENV === 'development') response.details = details;
+  return res.status(status).json(response);
+}
+
 // gzip 압축
 app.use(compression());
 
@@ -102,6 +124,18 @@ app.use((req, res, next) => {
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
   if (req.method === 'OPTIONS') return res.sendStatus(204);
+  next();
+});
+
+// 요청 로깅
+app.use((req, res, next) => {
+  const start = Date.now();
+  res.on('finish', () => {
+    const duration = Date.now() - start;
+    if (req.path.startsWith('/api/')) {
+      console.log(`[${new Date().toISOString()}] ${req.method} ${req.path} ${res.statusCode} ${duration}ms`);
+    }
+  });
   next();
 });
 
@@ -132,11 +166,16 @@ function parseBirthInput(data) {
 
 // Health check
 app.get('/api/health', (req, res) => {
+  const mem = process.memoryUsage();
   res.json({
     status: 'ok',
-    uptime: process.uptime(),
+    uptime: Math.floor(process.uptime()),
     timestamp: new Date().toISOString(),
     cacheSize: responseCache.size,
+    memory: {
+      heapUsed: Math.round(mem.heapUsed / 1024 / 1024) + 'MB',
+      rss: Math.round(mem.rss / 1024 / 1024) + 'MB'
+    }
   });
 });
 
@@ -158,7 +197,7 @@ app.post('/api/saju/basic', rateLimit, async (req, res) => {
     res.json(result);
   } catch (e) {
     console.error('기본 사주 오류:', e);
-    res.status(500).json({ error: '사주 분석 중 오류가 발생했습니다' });
+    errorResponse(res, 500, '사주 분석 중 오류가 발생했습니다', e.message);
   }
 });
 
@@ -186,7 +225,7 @@ app.post('/api/saju/compatibility', rateLimit, async (req, res) => {
     res.json(result);
   } catch (e) {
     console.error('궁합 오류:', e);
-    res.status(500).json({ error: '궁합 분석 중 오류가 발생했습니다' });
+    errorResponse(res, 500, '궁합 분석 중 오류가 발생했습니다', e.message);
   }
 });
 
@@ -211,7 +250,7 @@ app.post('/api/saju/today', rateLimit, async (req, res) => {
     res.json(result);
   } catch (e) {
     console.error('오늘의 운세 오류:', e);
-    res.status(500).json({ error: '오늘의 운세 분석 중 오류가 발생했습니다' });
+    errorResponse(res, 500, '오늘의 운세 분석 중 오류가 발생했습니다', e.message);
   }
 });
 
@@ -234,7 +273,7 @@ app.post('/api/saju/newyear', rateLimit, async (req, res) => {
     res.json(result);
   } catch (e) {
     console.error('신년운세 오류:', e);
-    res.status(500).json({ error: '신년운세 분석 중 오류가 발생했습니다' });
+    errorResponse(res, 500, '신년운세 분석 중 오류가 발생했습니다', e.message);
   }
 });
 
