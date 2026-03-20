@@ -107,6 +107,7 @@ function animateCountUp(elementSelector, target, duration = 1000) {
   setTimeout(() => {
     const els = document.querySelectorAll(elementSelector);
     els.forEach(el => {
+      if (target <= 0) { el.textContent = target; return; }
       let start = 0;
       const step = target / (duration / 16);
       const timer = setInterval(() => {
@@ -173,10 +174,14 @@ function closeGlossary() {
   document.getElementById('glossarySearch').value = '';
 }
 
+let _glossaryTimer;
 function filterGlossary(query) {
-  const q = query.trim().toLowerCase();
-  const filtered = q ? SAJU_GLOSSARY.filter(g => g.term.toLowerCase().includes(q) || g.desc.toLowerCase().includes(q)) : SAJU_GLOSSARY;
-  renderGlossaryList(filtered);
+  clearTimeout(_glossaryTimer);
+  _glossaryTimer = setTimeout(() => {
+    const q = query.trim().toLowerCase();
+    const filtered = q ? SAJU_GLOSSARY.filter(g => g.term.toLowerCase().includes(q) || g.desc.toLowerCase().includes(q)) : SAJU_GLOSSARY;
+    renderGlossaryList(filtered);
+  }, 150);
 }
 
 function renderGlossaryList(items) {
@@ -1475,9 +1480,12 @@ function resetForm(type) {
   const fm = {basic:'basicForm',today:'todayForm',compatibility:'compatForm',newyear:'newyearForm'};
   const fh = {basic:'basicFormHeader',today:'todayFormHeader',compatibility:'compatFormHeader',newyear:'newyearFormHeader'};
   const rm = {basic:'basicResult',today:'todayResult',compatibility:'compatResult',newyear:'newyearResult'};
+  const em = {basic:'basicError',today:'todayError',compatibility:'compatError',newyear:'newyearError'};
   document.getElementById(fm[type]).style.display = 'block';
   document.getElementById(fh[type]).style.display = 'block';
   document.getElementById(rm[type]).innerHTML = '';
+  const errEl = document.getElementById(em[type]);
+  if (errEl) { errEl.textContent = ''; errEl.classList.remove('show'); }
   window.scrollTo(0, 0);
 }
 
